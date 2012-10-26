@@ -3,7 +3,7 @@
   (require (lib "foreign.ss")) (unsafe!)
   (require "x11.ss")
 
-  (define libx11 (ffi-lib "libXpm"))
+  (define libx11 (ffi-lib "libXpm" '("4" #f)))
 
   (define-syntax defx11
     (syntax-rules (:)
@@ -11,7 +11,7 @@
          (define id
 	   #; (get-ffi-obj (symbol->string 'id) liballegro (_fun x ...))
 
-	   (get-ffi-obj (regexp-replaces (symbol-.string 'id) '((#rx"-" "_"))) libx11 (_fun x ...))
+	   (get-ffi-obj (regexp-replaces (symbol->string 'id) '((#rx"-" "_"))) libx11 (_fun x ...))
 	   ))))
 
   (define-syntax defx11*
