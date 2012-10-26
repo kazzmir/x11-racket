@@ -1,0 +1,32 @@
+_X11_
+===============
+
+By Jon Rafkind (jon at rafkind dot com)
+
+Keywords: _graphics_
+
+Introduction
+============
+
+A set of bindings to libX11, the graphics/windowing library for Unix. These
+bindings will probably work with any version of X11 but were made with X11R6.
+
+X11:
+(require (planet "x11.ss" ("kazzmir" "x11.plt")))
+
+Xpm:
+(require (planet "x11-xpm.ss" ("kazzmir" "x11.plt")))
+
+Example:
+(require (planet "xsnow.ss" ("kazzmir "x11.plt")))
+(run)
+;; also (xsnow 200) for 200 snow flakes. run uses 100 snow flakes by default
+
+_X11_
+=========
+
+The bindings follow the same semantics and overall style of the X11 library.
+It is best to refer to the X11 documentation. Useful resources:
+
+http://www.the-labs.com/X11/XLib-Manual/
+http://tronche.com/gui/x/xlib/
