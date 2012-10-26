@@ -11,7 +11,7 @@
          (define id
 	   #; (get-ffi-obj (symbol->string 'id) liballegro (_fun x ...))
 
-	   (get-ffi-obj (regexp-replaces 'id '((#rx"-" "_"))) libx11 (_fun x ...))
+	   (get-ffi-obj (regexp-replaces (symbol-.string 'id) '((#rx"-" "_"))) libx11 (_fun x ...))
 	   ))))
 
   (define-syntax defx11*

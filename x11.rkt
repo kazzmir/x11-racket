@@ -25,7 +25,7 @@
 	     (apply f v)))))
       ((_ id : x ...)
          (define id
-	   (get-ffi-obj (regexp-replaces 'id '((#rx"-" "_")))
+	   (get-ffi-obj (regexp-replaces (symbol->string 'id) '((#rx"-" "_")))
 			libx11 (_fun x ...))))))
 
   ;; just provide the above
