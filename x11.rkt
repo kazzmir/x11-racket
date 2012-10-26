@@ -619,7 +619,8 @@ Bool same_screen;	/* same screen flag */
 		   (y _int)
 		   (x-root _int)
 		   (y-root _int)
-		   (state _uint)
+		   ;(state _uint)
+		   (state Modifiers) ; Laurent Orseau -- 2012-10-26
 		   (keycode _uint)
 		   (same-screen _bool)))
 
@@ -1665,15 +1666,19 @@ int count;		/* defines range of change w. first_keycode*/
 
   (defx11* XPending : _XDisplay-pointer -> _bool)
 
+  ;@@ XNextEvent
   (defx11* XNextEvent : _XDisplay-pointer _XEvent-pointer -> _int)
   (defx11* (XNextEvent* display)
 	     (let ((e (make-dummy-XEvent))
 		     #;(make-XEvent 'LASTEvent 0 0)
+                     (cpointer-push-tag! (λ(e t)(printf "push tag ~a\n" t)
+                                           (cpointer-push-tag! e t)))
 		     )
 	       (XNextEvent display e)
 	       (cpointer-push-tag! e XAnyEvent-tag)
-	       (case (XAnyEvent-type e)
-		 ((KeyPress) (cpointer-push-tag! e XKeyPressedEvent-tag))
+	       ;(case (XAnyEvent-type e)
+	       (case (XEvent-type e)
+		 ((KeyPress)(cpointer-push-tag! e XKeyPressedEvent-tag))
 		 ((KeyRelease) (cpointer-push-tag! e XKeyReleasedEvent-tag))
 		 ((ButtonPress) (cpointer-push-tag! e XButtonPressedEvent-tag))
 		 ((ButtonRelease) (cpointer-push-tag! e XButtonReleasedEvent-tag))
@@ -1705,7 +1710,9 @@ int count;		/* defines range of change w. first_keycode*/
 		 ((SelectionNotify) (cpointer-push-tag! e XSelectionEvent-tag))
 		 ((ColormapNotify) (cpointer-push-tag! e XColormapEvent-tag))
 		 ((ClientMessage) (cpointer-push-tag! e XClientMessageEvent-tag))
-		 ((MappingNotify) (cpointer-push-tag! e XMappingEvent-tag)))
+		 ((MappingNotify) (cpointer-push-tag! e XMappingEvent-tag))
+                 ;(else (printf "No tag added!\n"))
+                 )
 	       e))
 
   (defx11* XGetGeometry :

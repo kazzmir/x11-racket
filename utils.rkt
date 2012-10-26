@@ -23,6 +23,16 @@
                                  (format-syntax "~a-~a" #'name field)
                                  1))))
                          (syntax->list #'(field ...))))
+                   (id (datum->syntax #'name
+                                      (string->symbol
+                                       (substring
+                                        (format-syntax "~a" #'name)
+                                        1))))
+                   (->list* (datum->syntax #'name
+                                           (string->symbol
+                                            (substring
+                                             (format-syntax "~a->list*" #'name)
+                                             1))))
                    (tag (datum->syntax #'name
                                        (string->symbol
                                          (substring
@@ -30,7 +40,8 @@
                                            1)))))
        #'(begin
            (define-cstruct name ((field type) ...))
-	     (provide tag provides ...))))))
+	     ;(provide tag provides ...))))))
+	     (provide id ->list* tag provides ...)))))) ; useful for match ; Laurent Orseau -- 2012-10-26
 
 (define-syntax (define-cstructs* stx)
   (syntax-case stx ()
