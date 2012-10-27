@@ -14,7 +14,7 @@
 (define-syntax (define-cstruct* stx)
   (syntax-case stx ()
     ((_ name ((field type) ...))
-     (with-syntax (((provides ...)
+     (with-syntax (#;((provides ...)
                     (map (lambda (field)
                            (datum->syntax
                              field
@@ -41,7 +41,9 @@
        #'(begin
            (define-cstruct name ((field type) ...))
 	     ;(provide tag provides ...))))))
-	     (provide id ->list* tag provides ...)))))) ; useful for match ; Laurent Orseau -- 2012-10-26
+	     ;(provide id ->list* tag provides ...)))))) ; useful for match ; Laurent Orseau -- 2012-10-26
+           ; better use (struct-out ?
+	     (provide (struct-out id) ->list* tag)))))) ; useful for match ; Laurent Orseau -- 2012-10-26
 
 (define-syntax (define-cstructs* stx)
   (syntax-case stx ()

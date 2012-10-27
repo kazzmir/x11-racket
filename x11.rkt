@@ -539,6 +539,16 @@ Display,
 
   ;; Im too lazy to really figure out what this should be
   ;; so ill just overcompensate
+  ;; Explanation: (Laurent Orseau -- 2012-10-27)
+  ;; XEvent is defined as a union (of XKeyPressedEvent, XButtonPressedEvent, etc.) in xlib.h,
+  ;; but there is (yet) nothing exactly equivalent in Racket (except _union which is not perfect).
+  ;; The idea here is very simple though: 
+  ;; The type of a pointer as considered by Racket is checked with its cpointer-tag list,
+  ;; Further down this file, the XNextEvent* procedure adds the correct tag to the list,
+  ;; depending on the received event (and returns the event).
+  ;; Then the user can simply consider the XEvent as an instance of the type it needs,
+  ;; like XKeyPressedEvent (see the provided examples).
+  ;@@ XEvent
   (define-cstruct _XEvent
     ((type EventType)))
 
@@ -1541,7 +1551,7 @@ int count;		/* defines range of change w. first_keycode*/
      (save-unders _bool)
      (root-input-mask _ulong)))
 
-  (define-cstruct* _XWindowAttributes
+  (define-cstruct _XWindowAttributes
     ((x _int)
      (y _int)
      (width _int)
@@ -1572,7 +1582,8 @@ int count;		/* defines range of change w. first_keycode*/
 			    0 0 #f 0 #f
 			    'IsUnmapped 
 			    0 0 0 #f #f))
-  (provide (rename-out (make-dummy-attributes make-XWindowAttributes)))
+  (provide (except-out (struct-out XWindowAttributes) make-XWindowAttributes)
+           (rename-out (make-dummy-attributes make-XWindowAttributes)))
   #;
   (provide XWindowAttributes-save-under XWindowAttributes-map-state 
 	   XWindowAttributes-width
@@ -1669,51 +1680,49 @@ int count;		/* defines range of change w. first_keycode*/
   ;@@ XNextEvent
   (defx11* XNextEvent : _XDisplay-pointer _XEvent-pointer -> _int)
   (defx11* (XNextEvent* display)
-	     (let ((e (make-dummy-XEvent))
-		     #;(make-XEvent 'LASTEvent 0 0)
-                     (cpointer-push-tag! (λ(e t)(printf "push tag ~a\n" t)
-                                           (cpointer-push-tag! e t)))
-		     )
-	       (XNextEvent display e)
-	       (cpointer-push-tag! e XAnyEvent-tag)
-	       ;(case (XAnyEvent-type e)
-	       (case (XEvent-type e)
-		 ((KeyPress)(cpointer-push-tag! e XKeyPressedEvent-tag))
-		 ((KeyRelease) (cpointer-push-tag! e XKeyReleasedEvent-tag))
-		 ((ButtonPress) (cpointer-push-tag! e XButtonPressedEvent-tag))
-		 ((ButtonRelease) (cpointer-push-tag! e XButtonReleasedEvent-tag))
-		 ((MotionNotify) (cpointer-push-tag! e XMotionEvent-tag))
-		 ((EnterNotify) (cpointer-push-tag! e XEnterWindowEvent-tag))
-		 ((LeaveNotify) (cpointer-push-tag! e XLeaveWindowEvent-tag))
-		 ((FocusIn) (cpointer-push-tag! e XFocusInEvent-tag))
-		 ((FocusOut) (cpointer-push-tag! e XFocusOutEvent-tag))
-		 ((KeymapNotify) (cpointer-push-tag! e XKeymapEvent-tag))
-		 ((Expose) (cpointer-push-tag! e XExposeEvent-tag))
-		 ((GraphicsExpose) (cpointer-push-tag! e XGraphicsExposeEvent-tag))
-		 ((NoExpose) (cpointer-push-tag! e XNoExposeEvent-tag))
-		 ((VisibilityNotify) (cpointer-push-tag! e XVisibilityEvent-tag))
-		 ((CreateNotify) (cpointer-push-tag! e XCreateWindowEvent-tag))
-		 ((DestroyNotify) (cpointer-push-tag! e XDestroyWindowEvent-tag))
-		 ((UnmapNotify) (cpointer-push-tag! e XUnmapEvent-tag))
-		 ((MapNotify) (cpointer-push-tag! e XMapEvent-tag))
-		 ((MapRequest) (cpointer-push-tag! e XMapRequestEvent-tag))
-		 ((ReparentNotify) (cpointer-push-tag! e XReparentEvent-tag))
-		 ((ConfigureNotify) (cpointer-push-tag! e XConfigureEvent-tag))
-		 ((ConfigureRequest) (cpointer-push-tag! e XConfigureRequestEvent-tag))
-		 ((GravityNotify) (cpointer-push-tag! e XGravityEvent-tag))
-		 ((ResizeRequest) (cpointer-push-tag! e XResizeRequestEvent-tag))
-		 ((CirculateNotify) (cpointer-push-tag! e XCirculateEvent-tag))
-		 ((CirculateRequest) (cpointer-push-tag! e XCirculateRequestEvent-tag))
-		 ((PropertyNotify) (cpointer-push-tag! e XPropertyEvent-tag))
-		 ((SelectionClear) (cpointer-push-tag! e XSelectionClearEvent-tag))
-		 ((SelectionRequest) (cpointer-push-tag! e XSelectionRequestEvent-tag))
-		 ((SelectionNotify) (cpointer-push-tag! e XSelectionEvent-tag))
-		 ((ColormapNotify) (cpointer-push-tag! e XColormapEvent-tag))
-		 ((ClientMessage) (cpointer-push-tag! e XClientMessageEvent-tag))
-		 ((MappingNotify) (cpointer-push-tag! e XMappingEvent-tag))
-                 ;(else (printf "No tag added!\n"))
-                 )
-	       e))
+    (let ((e (make-dummy-XEvent))
+          #;(make-XEvent 'LASTEvent 0 0)
+          (push-tags! (λ(e . tags)(for [(t tags)] (cpointer-push-tag! e t))))
+          )
+      (XNextEvent display e)
+      (cpointer-push-tag! e XAnyEvent-tag)
+      (case (XAnyEvent-type e)
+        ((KeyPress)          (push-tags! e XKeyEvent-tag XKeyPressedEvent-tag))
+        ((KeyRelease)        (push-tags! e XKeyEvent-tag XKeyReleasedEvent-tag))
+        ((ButtonPress)       (push-tags! e XButtonEvent-tag XButtonPressedEvent-tag))
+        ((ButtonRelease)     (push-tags! e XButtonEvent-tag XButtonReleasedEvent-tag))
+        ((MotionNotify)      (push-tags! e XMotionEvent-tag))
+        ((EnterNotify)       (push-tags! e XCrossingEvent-tag XEnterWindowEvent-tag))
+        ((LeaveNotify)       (push-tags! e XCrossingEvent-tag XLeaveWindowEvent-tag))
+        ((FocusIn)           (push-tags! e XFocusChangeEvent-tag XFocusInEvent-tag))
+        ((FocusOut)          (push-tags! e XFocusChangeEvent-tag XFocusOutEvent-tag))
+        ((KeymapNotify)      (push-tags! e XKeymapEvent-tag))
+        ((Expose)            (push-tags! e XExposeEvent-tag))
+        ((GraphicsExpose)    (push-tags! e XGraphicsExposeEvent-tag))
+        ((NoExpose)          (push-tags! e XNoExposeEvent-tag))
+        ((VisibilityNotify)  (push-tags! e XVisibilityEvent-tag))
+        ((CreateNotify)      (push-tags! e XCreateWindowEvent-tag))
+        ((DestroyNotify)     (push-tags! e XDestroyWindowEvent-tag))
+        ((UnmapNotify)       (push-tags! e XUnmapEvent-tag))
+        ((MapNotify)         (push-tags! e XMapEvent-tag))
+        ((MapRequest)        (push-tags! e XMapRequestEvent-tag))
+        ((ReparentNotify)    (push-tags! e XReparentEvent-tag))
+        ((ConfigureNotify)   (push-tags! e XConfigureEvent-tag))
+        ((ConfigureRequest)  (push-tags! e XConfigureRequestEvent-tag))
+        ((GravityNotify)     (push-tags! e XGravityEvent-tag))
+        ((ResizeRequest)     (push-tags! e XResizeRequestEvent-tag))
+        ((CirculateNotify)   (push-tags! e XCirculateEvent-tag))
+        ((CirculateRequest)  (push-tags! e XCirculateRequestEvent-tag))
+        ((PropertyNotify)    (push-tags! e XPropertyEvent-tag))
+        ((SelectionClear)    (push-tags! e XSelectionClearEvent-tag))
+        ((SelectionRequest)  (push-tags! e XSelectionRequestEvent-tag))
+        ((SelectionNotify)   (push-tags! e XSelectionEvent-tag))
+        ((ColormapNotify)    (push-tags! e XColormapEvent-tag))
+        ((ClientMessage)     (push-tags! e XClientMessageEvent-tag))
+        ((MappingNotify)     (push-tags! e XMappingEvent-tag))
+       ;(else (printf "No tag added!\n"))
+        )
+      e))
 
   (defx11* XGetGeometry :
 	   _XDisplay-pointer Drawable (parent : (_ptr o Window))
@@ -1798,7 +1807,8 @@ int count;		/* defines range of change w. first_keycode*/
 	   _XDisplay-pointer Window (attributes : (_ptr o _XWindowAttributes))
 	   -> Status -> attributes)
 
-  (defx11* XOpenDisplay : _string -> _XDisplay-pointer)
+  ;(defx11* XOpenDisplay : _string -> _XDisplay-pointer)
+  (defx11* XOpenDisplay : _string -> _XDisplay-pointer/null) ; Laurent Orseau -- 2012-10-27
 
   (defx11* XAllPlanes : -> _uint)
 
