@@ -17,7 +17,7 @@
   ;; (require (lib "list.ss"))
   (require "fd.rkt" 
            "utils.rkt"
-           "keysymdef.rkt"
+           ;"keysymtype.rkt"
            )
 
   (define libx11 (ffi-lib "libX11"))
@@ -66,7 +66,7 @@
   (define* Font XID)
   (define* ColorMap XID)
   (define* GContext XID)
-  ;(define* KeySym XID) ; defined in keysymdef.rkt
+  (define* KeySym XID) ; defined as a big _enum in keysymdef.rkt, but not used (no need I think)
   (define* XrmQuark _int)
 
   (define RectangleRegion
