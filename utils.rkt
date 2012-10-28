@@ -3,6 +3,16 @@
 (require scheme/foreign)
 (provide (all-defined-out))
 
+(define-syntax define*
+  (syntax-rules ()
+    [(_ (name args ...) body ...)
+     (begin (define (name args ...) body ...)
+            (provide name))]
+    [(_ name val)
+     (begin (define name val)
+            (provide name))])
+  )
+
 (define-for-syntax (format-syntax str . args)
     (apply format str
 	   (map (lambda (x)
@@ -53,3 +63,5 @@
      #'(begin
          (define-cstruct* name1 rest)
          (define-cstructs* (names ...) rest)))))
+
+

@@ -4,12 +4,21 @@
   ;; http://tronche.com/gui/x/xlib/function-index.html
   ;; http://www.xfree86.org/current/manindex3.html
 
+#| TODO
+- most functions don't have the correct type
+  They must use the defined types instead of _int, _uint, etc.
+
+|#
+
   (require ffi/unsafe
            ffi/unsafe/cvector)
 
   ;; (require mzlib/kw)
   ;; (require (lib "list.ss"))
-  (require "fd.rkt" "utils.rkt")
+  (require "fd.rkt" 
+           "utils.rkt"
+           "keysymdef.rkt"
+           )
 
   (define libx11 (ffi-lib "libX11"))
 
@@ -41,14 +50,6 @@
 	 (define id (lambda (x ...)
 		      expr ...))))))
 
-  ;; define + provide
-  (define-syntax define*
-    (syntax-rules ()
-      ((_ id expr)
-       (begin
-	 (define id expr)
-	 (provide id)))))
-
   (define* Status _int)
   (define* Pixel _ulong)
   (define* XID _ulong)
@@ -65,7 +66,7 @@
   (define* Font XID)
   (define* ColorMap XID)
   (define* GContext XID)
-  (define* KeySym XID)
+  ;(define* KeySym XID) ; defined in keysymdef.rkt
   (define* XrmQuark _int)
 
   (define RectangleRegion
@@ -186,27 +187,27 @@
 	     StaticGravity = 10)))
 
   (define Modifiers
-    (_bitmask '(ShiftMask   = #b0000000000001
-		LockMask    = #b0000000000010
-		ControlMask = #b0000000000100
-		Mod1Mask    = #b0000000001000
-		Mod2Mask    = #b0000000010000
-		Mod3Mask    = #b0000000100000
-		Mod4Mask    = #b0000001000000
-		Mod5Mask    = #b0000010000000
-		Button1Mask = #b0000100000000 
-		Button2Mask = #b0001000000000 
-		Button3Mask = #b0010000000000 
-		Button4Mask = #b0100000000000
-		Button5Mask = #b1000000000000 
-		Any = #x8000)))
+    (_bitmask '(ShiftMask  = #b0000000000001
+		LockMask     = #b0000000000010 ; CapsLock
+		ControlMask  = #b0000000000100
+		Mod1Mask     = #b0000000001000 ; Alt/meta
+		Mod2Mask     = #b0000000010000 ; NumLock
+		Mod3Mask     = #b0000000100000 ; Super
+		Mod4Mask     = #b0000001000000 ; 
+		Mod5Mask     = #b0000010000000 ; AltGr
+		Button1Mask  = #b0000100000000
+		Button2Mask  = #b0001000000000
+		Button3Mask  = #b0010000000000
+		Button4Mask  = #b0100000000000
+		Button5Mask  = #b1000000000000
+		Any          = #x8000)))
 
   (define GrabMode
     (_enum '(GrabModeSync = 0
              GrabModeAsync = 1)))
 
   (define WindowChanges
-    (_bitmask '(X =           #b0000001
+    (_bitmask '(X =     #b0000001
 		Y =           #b0000010
 		Width =       #b0000100
 		Height =      #b0001000
@@ -306,8 +307,7 @@
   (define* CopyFromParent/int 0)
   (define* None 0)
 
-  (provide InputMask)
-  (define InputMask
+  (define* InputMask ;sometimes called event_mask
     (_bitmask '(NoEventMask =              #x00000000
                 KeyPressMask =             #x00000001
                 KeyReleaseMask =           #x00000002
@@ -570,7 +570,7 @@ Display,
     (let ((s (malloc _XEvent 1)))
       (cpointer-push-tag! s XEvent-tag)
       s))
-  (provide XEvent-type make-XEvent make-dummy-XEvent)
+  (provide XEvent-type make-XEvent XEvent->list* make-dummy-XEvent)
   
   (define-cstruct* _XExposeEvent
     ((type EventType)
@@ -632,6 +632,7 @@ Bool same_screen;	/* same screen flag */
 		   ;(state _uint)
 		   (state Modifiers) ; Laurent Orseau -- 2012-10-26
 		   (keycode _uint)
+		   ;(keycode KeyCode) ; no, we can't, beause KeyCode is _ubyte...
 		   (same-screen _bool)))
 
   (define-cstructs* (_XButtonEvent _XButtonPressedEvent _XButtonReleasedEvent)
@@ -843,7 +844,7 @@ Bool same_screen;	/* same screen flag */
      (height _int)
      (border-width _int)
      (above Window)
-     (detail _int)
+     (detail _int) ; = stack-mode
      (value-mask WindowChanges-long)))
 
   (define-cstruct* _XCirculateEvent
@@ -925,6 +926,16 @@ Bool same_screen;	/* same screen flag */
      (message-type Atom)
      (format _int)
      (data _cvector)))
+  
+  ; Laurent Orseau -- 2012-10-27
+  (define-cstruct* _XErrorEvent
+    ((type EventType)
+     (display _XDisplay-pointer)
+     (resourceid XID)
+     (serial _ulong)
+     (error-code _uint8)
+     (request-code _uint8)
+     (minor-code _uint8)))
 
   (define-cstruct* _XMappingEvent
     ((type EventType)
@@ -1365,6 +1376,7 @@ int stack_mode;
 			  #:stack-mode
 			  (stack-mode 0))
 	     (make-XWindowChanges x y width height border-width sibling stack-mode))
+  (provide make-XWindowChanges)
 
   (define-cstruct _XFontSetExtents
 		  ((max-ink-extent _XRectangle)
@@ -1680,12 +1692,17 @@ int count;		/* defines range of change w. first_keycode*/
   ;@@ XNextEvent
   (defx11* XNextEvent : _XDisplay-pointer _XEvent-pointer -> _int)
   (defx11* (XNextEvent* display)
+    (printf "In XNextEvent*\n")
     (let ((e (make-dummy-XEvent))
           #;(make-XEvent 'LASTEvent 0 0)
           (push-tags! (λ(e . tags)(for [(t tags)] (cpointer-push-tag! e t))))
           )
+      (printf "Getting event... ")
       (XNextEvent display e)
+      (printf "Ok.\n")
+      (printf "Pushing XAnyEvent tag... ")
       (cpointer-push-tag! e XAnyEvent-tag)
+      (printf "Ok.\n")
       (case (XAnyEvent-type e)
         ((KeyPress)          (push-tags! e XKeyEvent-tag XKeyPressedEvent-tag))
         ((KeyRelease)        (push-tags! e XKeyEvent-tag XKeyReleasedEvent-tag))
@@ -1722,6 +1739,7 @@ int count;		/* defines range of change w. first_keycode*/
         ((MappingNotify)     (push-tags! e XMappingEvent-tag))
        ;(else (printf "No tag added!\n"))
         )
+      (printf "After pushing all tags\n")
       e))
 
   (defx11* XGetGeometry :
@@ -1747,7 +1765,7 @@ int count;		/* defines range of change w. first_keycode*/
             (register-finalizer out (lambda (c) (XFree c)))
             out))
 
-  (defx11* XSetErrorHandler : (_fun _XDisplay-pointer _pointer -> _int) -> _void)
+  (defx11* XSetErrorHandler : (_fun _XDisplay-pointer _XErrorEvent-pointer -> _int) -> _void)
 
   (defx11* XCreateGC :
 	   _XDisplay-pointer Drawable _ulong _XGCValues-pointer/null -> _XGC-pointer)
@@ -2133,10 +2151,11 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XListExtensions : _XDisplay-pointer (_ptr i _int) -> (_ptr i _string))
 (defx11* XListProperties : _XDisplay-pointer _ulong (_ptr i _int) -> (_ptr i _ulong))
 (defx11* XListHosts : _XDisplay-pointer (_ptr i _int) (_ptr i _int) -> _XHostAddress-pointer)
-(defx11* XKeycodeToKeysym : _XDisplay-pointer _ubyte _int -> _ulong)
-(defx11* XLookupKeysym : _XKeyEvent-pointer _int -> _ulong)
+(defx11* XKeycodeToKeysym : _XDisplay-pointer _ubyte _int -> KeySym)
+(defx11* XLookupKeysym : _XKeyEvent-pointer _int -> KeySym)
 (defx11* XGetKeyboardMapping : _XDisplay-pointer _ubyte _int (_ptr i _int) -> (_ptr i _ulong))
-(defx11* XStringToKeysym : _string -> _ulong)
+;(defx11* XStringToKeysym : _string -> _ulong)
+(defx11* XStringToKeysym : _string -> KeySym)
 (defx11* XMaxRequestSize : _XDisplay-pointer -> _long)
 (defx11* XResourceManagerString : _XDisplay-pointer -> _string)
 (defx11* XScreenResourceString : _Screen-pointer -> _string)
@@ -2198,12 +2217,13 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XChangePointerControl : _XDisplay-pointer _int _int _int _int _int -> _int)
 (defx11* XChangeProperty : _XDisplay-pointer _ulong _ulong _ulong _int _int (_ptr i _ubyte) _int -> _int)
 (defx11* XChangeSaveSet : _XDisplay-pointer _ulong _int -> _int)
-(defx11* XChangeWindowAttributes : _XDisplay-pointer _ulong ChangeWindowAttributes _XSetWindowAttributes-pointer -> _int)
+(defx11* XChangeWindowAttributes : _XDisplay-pointer Window ChangeWindowAttributes _XSetWindowAttributes-pointer -> _int)
 
 (defx11* XCheckIfEvent : _XDisplay-pointer _XEvent-pointer (_fun _XDisplay-pointer _XEvent-pointer _pointer -> _bool) _string -> _int)
 
 (defx11* XCheckMaskEvent : _XDisplay-pointer _long _XEvent-pointer -> _int)
-(defx11* XCheckTypedEvent : _XDisplay-pointer _int _XEvent-pointer -> _int)
+;(defx11* XCheckTypedEvent : _XDisplay-pointer _int _XEvent-pointer -> _int)
+(defx11* XCheckTypedEvent : _XDisplay-pointer InputMask _XEvent-pointer -> _int)
 (defx11* XCheckTypedWindowEvent : _XDisplay-pointer _ulong _int _XEvent-pointer -> _int)
 (defx11* XCheckWindowEvent : _XDisplay-pointer _ulong _long _XEvent-pointer -> _int)
 (defx11* XCirculateSubwindows : _XDisplay-pointer _ulong _int -> _int)
@@ -2211,14 +2231,15 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XCirculateSubwindowsUp : _XDisplay-pointer _ulong -> _int)
 (defx11* XClearWindow : _XDisplay-pointer _ulong -> _int)
 (defx11* XCloseDisplay : _XDisplay-pointer -> _int)
-(defx11* XConfigureWindow : _XDisplay-pointer _ulong WindowChanges _XWindowChanges-pointer/null -> _int)
+(defx11* XConfigureWindow : _XDisplay-pointer Window WindowChanges _XWindowChanges-pointer/null -> _int)
 (defx11* XConvertSelection : _XDisplay-pointer _ulong _ulong _ulong _ulong _ulong -> _int)
 (defx11* XCopyPlane : _XDisplay-pointer _ulong _ulong _XGC-pointer _int _int _uint _uint _int _int _ulong -> _int)
 (defx11* XDefaultDepthOfScreen : _Screen-pointer -> _int)
 (defx11* XDefaultScreen : _XDisplay-pointer -> _int)
 (defx11* XDefineCursor : _XDisplay-pointer _ulong _ulong -> _int)
 (defx11* XDeleteProperty : _XDisplay-pointer _ulong _ulong -> _int)
-(defx11* XDestroyWindow : _XDisplay-pointer _ulong -> _int)
+;(defx11* XDestroyWindow : _XDisplay-pointer _ulong -> _int)
+(defx11* XDestroyWindow : _XDisplay-pointer Window -> _int)
 (defx11* XDestroySubwindows : _XDisplay-pointer _ulong -> _int)
 (defx11* XDoesBackingStore : _Screen-pointer -> _int)
 (defx11* XDoesSaveUnders : _Screen-pointer -> _int)
@@ -2252,9 +2273,12 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XGetScreenSaver : _XDisplay-pointer (_ptr i _int) (_ptr i _int) (_ptr i _int) (_ptr i _int) -> _int)
 (defx11* XGetTransientForHint : _XDisplay-pointer _ulong (_ptr i _ulong) -> _int)
 (defx11* XGrabButton : _XDisplay-pointer XK-Pointer Modifiers Window _bool InputMask GrabMode GrabMode Window Cursor -> _int)
-(defx11* XGrabKey : _XDisplay-pointer _int _uint _ulong _int _int _int -> _int)
+;(defx11* XGrabKey : _XDisplay-pointer _int _uint _ulong _int _int _int -> _int)
+(defx11* XGrabKey : _XDisplay-pointer KeyCode Modifiers Window _bool GrabMode GrabMode -> _int)
+; can generate BadAccess , BadValue , and BadWindow errors. 
 (defx11* XGrabKeyboard : _XDisplay-pointer _ulong _int _int _int _ulong -> _int)
-(defx11* XGrabPointer : _XDisplay-pointer _ulong _int _uint _int _int _ulong _ulong _ulong -> _int)
+;@@ XGrabPointer
+(defx11* XGrabPointer : _XDisplay-pointer Window _bool InputMask GrabMode GrabMode Window Cursor Time -> _int)
 (defx11* XHeightMMOfScreen : _Screen-pointer -> _int)
 (defx11* XHeightOfScreen : _Screen-pointer -> _int)
 
@@ -2262,7 +2286,8 @@ int count;		/* defines range of change w. first_keycode*/
 
 (defx11* XImageByteOrder : _XDisplay-pointer -> _int)
 (defx11* XInstallColormap : _XDisplay-pointer _ulong -> _int)
-(defx11* XKeysymToKeycode : _XDisplay-pointer _ulong -> _ubyte)
+;(defx11* XKeysymToKeycode : _XDisplay-pointer _ulong -> _ubyte)
+(defx11* XKeysymToKeycode : _XDisplay-pointer KeySym -> KeyCode)
 (defx11* XKillClient : _XDisplay-pointer _ulong -> _int)
 (defx11* XLookupColor : _XDisplay-pointer _ulong _string _XColor-pointer _XColor-pointer -> _int)
 (defx11* XLowerWindow : _XDisplay-pointer _ulong -> _int)
@@ -2272,7 +2297,8 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XMaskEvent : _XDisplay-pointer _long _XEvent-pointer -> _int)
 (defx11* XMaxCmapsOfScreen : _Screen-pointer -> _int)
 (defx11* XMinCmapsOfScreen : _Screen-pointer -> _int)
-(defx11* XMoveResizeWindow : _XDisplay-pointer _ulong _int _int _uint _uint -> _int)
+;(defx11* XMoveResizeWindow : _XDisplay-pointer _ulong _int _int _uint _uint -> _int)
+(defx11* XMoveResizeWindow : _XDisplay-pointer Window _int _int _uint _uint -> _int)
 (defx11* XMoveWindow : _XDisplay-pointer _ulong _int _int -> _int)
 (defx11* XNoOp : _XDisplay-pointer -> _int)
 (defx11* XParseColor : _XDisplay-pointer _ulong _string _XColor-pointer -> _int)
@@ -2311,7 +2337,7 @@ int count;		/* defines range of change w. first_keycode*/
 
 (defx11* XQueryTextExtents : _XDisplay-pointer _ulong _string _int (_ptr i _int) (_ptr i _int) (_ptr i _int) _XCharStruct-pointer -> _int)
 (defx11* XQueryTextExtents16 : _XDisplay-pointer _ulong _XChar2b-pointer _int (_ptr i _int) (_ptr i _int) (_ptr i _int) _XCharStruct-pointer -> _int)
-(defx11* XRaiseWindow : _XDisplay-pointer _ulong -> _int)
+(defx11* XRaiseWindow : _XDisplay-pointer Window -> _int)
 (defx11* XReadBitmapFile : _XDisplay-pointer _ulong _string (_ptr i _uint) (_ptr i _uint) (_ptr i _ulong) (_ptr i _int) (_ptr i _int) -> _int)
 (defx11* XReadBitmapFileData : _string (_ptr i _uint) (_ptr i _uint) _pointer (_ptr i _int) (_ptr i _int) -> _int)
 (defx11* XRebindKeysym : _XDisplay-pointer _ulong (_ptr i _ulong) _int (_ptr i _ubyte) _int -> _int)
@@ -2351,7 +2377,8 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XUngrabButton : _XDisplay-pointer XK-Pointer Modifiers Window -> _int)
 (defx11* XUngrabKey : _XDisplay-pointer _int _uint _ulong -> _int)
 (defx11* XUngrabKeyboard : _XDisplay-pointer _ulong -> _int)
-(defx11* XUngrabPointer : _XDisplay-pointer _ulong -> _int)
+;(defx11* XUngrabPointer : _XDisplay-pointer _ulong -> _int)
+(defx11* XUngrabPointer : _XDisplay-pointer Time -> _int)
 (defx11* XUninstallColormap : _XDisplay-pointer _ulong -> _int)
 (defx11* XUnloadFont : _XDisplay-pointer _ulong -> _int)
 (defx11* XUnmapSubwindows : _XDisplay-pointer _ulong -> _int)
