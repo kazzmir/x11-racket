@@ -27,15 +27,16 @@
       #;
       ((_ id : x ...)
        (define id
-	 (let ((f (get-ffi-obj (regexp-replaces 'id '((#rx"-" "_")))
-			       libx11 (_fun x ...))))
-	   (lambda v
-	     (printf "~a ~a\n" 'id v)
-	     (apply f v)))))
-      ((_ id : x ...)
-         (define id
-	   (get-ffi-obj (regexp-replaces (symbol->string 'id) '((#rx"-" "_")))
-			libx11 (_fun x ...))))))
+         (let ((f (get-ffi-obj (regexp-replaces 'id '((#rx"-" "_")))
+                               libx11 (_fun x ...))))
+           (lambda v
+             (printf "~a ~a\n" 'id v)
+             (apply f v)))))
+
+      [(_ id : x ...)
+       (define id
+         (get-ffi-obj (regexp-replaces (symbol->string 'id) '((#rx"-" "_")))
+                      libx11 (_fun x ...)))]))
 
   ;; just provide the above
   (define-syntax defx11*
@@ -1822,7 +1823,8 @@ int count;		/* defines range of change w. first_keycode*/
 	   _XDisplay-pointer EventQueue -> _int)
 
   (defx11* XGetWindowAttributes :
-	   _XDisplay-pointer Window (attributes : (_ptr o _XWindowAttributes))
+	   _XDisplay-pointer Window
+       (attributes : (_ptr o _XWindowAttributes))
 	   -> Status -> attributes)
 
   ;(defx11* XOpenDisplay : _string -> _XDisplay-pointer)
