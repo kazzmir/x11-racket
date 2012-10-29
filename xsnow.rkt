@@ -7,18 +7,18 @@
 ;; 0.3 7/1/2007 - Added santa
 ;; 0.4 7/13/2007 - Added KDE fix back in
 ;; 0.5 9/9/2008 - Fixes for mzscheme 4.0
+;; 0.6 10/29/2012 - Fixes for racket 5.3
 
+#lang racket
 
-#lang scheme
-
-(require (lib "trace.ss"))
+; (require trace)
 ; (require (lib "errortrace.ss" "errortrace"))
 (require "x11.rkt")
 (require "x11-xpm.rkt")
-(require (lib "foreign.ss")) (unsafe!)
+(require ffi/unsafe)
+
+;; TODO: get rid of mpairs
 (require scheme/mpair)
-;; (require #%foreign)
-(require (lib "list.ss"))
 
 (define (real->int real)
   (inexact->exact (round real)))
