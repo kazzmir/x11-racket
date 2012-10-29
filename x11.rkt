@@ -1688,11 +1688,11 @@ int count;		/* defines range of change w. first_keycode*/
     (let ((e (make-dummy-XEvent))
           (push-tags! (λ(e . tags)(for [(t tags)] (cpointer-push-tag! e t))))
           )
-      (printf "Getting event... display=~a e=~a" display e)(flush-output)
-      (XPeekEvent display e) ; just in case
-      (printf "After XPeekEvent\n")(flush-output)
+      ;(printf "Getting event... display=~a e=~a" display e)(flush-output)
+      ;(XPeekEvent display e) ; just in case
+      ;(printf "After XPeekEvent\n")(flush-output)
       (XNextEvent display e)
-      (printf "Ok.\n")(flush-output)
+      ;(printf "Ok.\n")(flush-output)
       ;(printf "Pushing XAnyEvent tag... ")(flush-output)
       (cpointer-push-tag! e XAnyEvent-tag)
       ;(printf "Ok.\n")(flush-output)
