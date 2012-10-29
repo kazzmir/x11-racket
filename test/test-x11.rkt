@@ -1,5 +1,5 @@
 #lang racket
-(require (planet kazzmir/x11/x11))
+(require "../x11.rkt")
 
 ;;; This is a direct translation of:
 ;;; http://en.wikibooks.org/wiki/X_Windows_Programming/XLib

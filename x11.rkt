@@ -562,20 +562,10 @@ Display,
 
   ;; more laziness
   (define (make-dummy-XEvent)
-    #;
-    (make-XEvent 'LASTEvent
-		 0 0
-		 0 0 0 0
-		 0 0 0 0
-		 0 0)
     ;; 24 comes from Xlib.h
     ;; typedef union XEvent { ...; long pad[24]; }
     (let ((s (malloc _int (* 24 (ctype-sizeof _long)))))
       (memset s 0 24 _long)
-      (cpointer-push-tag! s XEvent-tag)
-      s)
-    #;
-    (let ((s (malloc _XEvent 1)))
       (cpointer-push-tag! s XEvent-tag)
       s))
   (provide XEvent-type make-XEvent XEvent->list* make-dummy-XEvent)
@@ -591,9 +581,6 @@ Display,
      (width _int)
      (height _int)
      (count _int)))
-  #;
-  (provide XExposeEvent-tag XExposeEvent-x XExposeEvent-y 
-	   XExposeEvent-width XExposeEvent-height)
 
   (define-cstruct* _XAnyEvent
     ((type EventType)
@@ -601,10 +588,6 @@ Display,
      (send-event _bool)
      (display _XDisplay-pointer)
      (window Window)))
-
-  #;
-  (provide XAnyEvent-tag XAnyEvent-type XAnyEvent-serial
-	   XAnyEvent-send-event XAnyEvent-display XAnyEvent-window)
 
 #|
 typedef struct {
@@ -1700,17 +1683,18 @@ int count;		/* defines range of change w. first_keycode*/
   ;@@ XNextEvent
   (defx11* XNextEvent : _XDisplay-pointer _XEvent-pointer -> _int)
   (defx11* (XNextEvent* display)
-    ;(printf "In XNextEvent*\n")
+    ;(printf "In XNextEvent*\n")(flush-output)
     (let ((e (make-dummy-XEvent))
-          #;(make-XEvent 'LASTEvent 0 0)
           (push-tags! (λ(e . tags)(for [(t tags)] (cpointer-push-tag! e t))))
           )
-      ;(printf "Getting event... ")
+      (printf "Getting event... display=~a e=~a" display e)(flush-output)
+      (XPeekEvent display e) ; just in case
+      (printf "After XPeekEvent\n")(flush-output)
       (XNextEvent display e)
-      ;(printf "Ok.\n")
-      ;(printf "Pushing XAnyEvent tag... ")
+      (printf "Ok.\n")(flush-output)
+      ;(printf "Pushing XAnyEvent tag... ")(flush-output)
       (cpointer-push-tag! e XAnyEvent-tag)
-      ;(printf "Ok.\n")
+      ;(printf "Ok.\n")(flush-output)
       (case (XAnyEvent-type e)
         ((KeyPress)          (push-tags! e XKeyEvent-tag XKeyPressedEvent-tag))
         ((KeyRelease)        (push-tags! e XKeyEvent-tag XKeyReleasedEvent-tag))
@@ -1745,9 +1729,9 @@ int count;		/* defines range of change w. first_keycode*/
         ((ColormapNotify)    (push-tags! e XColormapEvent-tag))
         ((ClientMessage)     (push-tags! e XClientMessageEvent-tag))
         ((MappingNotify)     (push-tags! e XMappingEvent-tag))
-       ;(else (printf "No tag added!\n"))
+        ;(else (printf "No tag added!\n"))
         )
-      ;(printf "After pushing all tags\n")
+      ;(printf "After pushing all tags\n")(flush-output)
       e))
 
   (defx11* XGetGeometry :
@@ -2316,6 +2300,7 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XParseColor : _XDisplay-pointer _ulong _string _XColor-pointer -> _int)
 (defx11* XParseGeometry : _string (_ptr i _int) (_ptr i _int) (_ptr i _uint) (_ptr i _uint) -> _int)
 (defx11* XPeekEvent : _XDisplay-pointer _XEvent-pointer -> _int)
+;(defx11* XPeekEvent : _XDisplay-pointer (event : (_ptr o _XEvent)) -> _int -> event) ; ??
 
 (defx11* XPeekIfEvent : _XDisplay-pointer _XEvent-pointer (_fun _XDisplay-pointer _XEvent-pointer _pointer -> _bool) _pointer -> _int)
 
@@ -2526,33 +2511,32 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XUnionRegion            : _XRegion-pointer _XRegion-pointer _XRegion-pointer -> _int)
 
 (defx11* XrmUniqueQuark : -> XrmQuark)
-(provide XUniqueContext)
-(define XUniqueContext XrmUniqueQuark)
+(define* XUniqueContext XrmUniqueQuark)
 
-(defx11* XWMGeometry : _XDisplay-pointer _int _string _string _uint _XSizeHints-pointer (_ptr i _int) (_ptr i _int) (_ptr i _int) (_ptr i _int) (_ptr i _int) -> _int)
-(defx11* XXorRegion : _XRegion-pointer _XRegion-pointer _XRegion-pointer -> _int)
-(defx11* XIntersectRegion : _XRegion-pointer _XRegion-pointer _XRegion-pointer -> _int)
-(defx11* XClipBox : _XRegion-pointer _XRectangle-pointer -> _int)
-(defx11* XConvertCase : _ulong (_ptr i _ulong) (_ptr i _ulong) -> _void)
-;; (defx11* XLookUpAssoc : -> _string)
-(defx11* XLookupString : _XKeyEvent-pointer _string _int (_ptr i _ulong) _XComposeStatus-pointer -> _int)
-(defx11* XMatchVisualInfo : _XDisplay-pointer _int _int _int _XVisualInfo-pointer -> _int)
-(defx11* XOffsetRegion : _XRegion-pointer _int _int -> _int)
-(defx11* XDefaultString : -> _string)
-(defx11* XPolygonRegion : _XPoint-pointer _int _int -> _XRegion-pointer)
-(defx11* XDeleteContext : _XDisplay-pointer _ulong _int -> _int)
-(defx11* XDestroyImage : _XImage-pointer -> _int)
-(defx11* XPutPixel : _XImage-pointer _int _int _ulong -> _int)
-(defx11* XmbSetWMProperties : _XDisplay-pointer _ulong _string _string (_ptr i _string) _int _XSizeHints-pointer _XWMHints-pointer _XClassHint-pointer -> _void)
-(defx11* XmbTextListToTextProperty : _XDisplay-pointer (_ptr i _string) _int XICCEncodingStyle _XTextProperty-pointer -> _int)
-(defx11* XmbTextPropertyToTextList : _XDisplay-pointer _XTextProperty-pointer _pointer (_ptr i _int) -> _int)
-(defx11* Xpermalloc : _uint -> _pointer)
-(defx11* XSaveContext : _XDisplay-pointer _ulong _int _string -> _int)
-(defx11* XwcFreeStringList : _pointer -> _void)
-(defx11* XwcTextListToTextProperty : _XDisplay-pointer _pointer _int XICCEncodingStyle _XTextProperty-pointer -> _int)
-(defx11* XwcTextPropertyToTextList : _XDisplay-pointer _XTextProperty-pointer _pointer (_ptr i _int) -> _int)
-(defx11* XSetClassHint : _XDisplay-pointer _ulong _XClassHint-pointer -> _int)
-(defx11* XSetWMProperties : _XDisplay-pointer _ulong _XTextProperty-pointer _XTextProperty-pointer (_ptr i _string) _int _XSizeHints-pointer _XWMHints-pointer _XClassHint-pointer -> _void)
+(defx11* XWMGeometry                : _XDisplay-pointer _int _string _string _uint _XSizeHints-pointer (_ptr i _int) (_ptr i _int) (_ptr i _int) (_ptr i _int) (_ptr i _int) -> _int)
+(defx11* XXorRegion                 : _XRegion-pointer _XRegion-pointer _XRegion-pointer -> _int)
+(defx11* XIntersectRegion           : _XRegion-pointer _XRegion-pointer _XRegion-pointer -> _int)
+(defx11* XClipBox                   : _XRegion-pointer _XRectangle-pointer -> _int)
+(defx11* XConvertCase               : _ulong (_ptr i _ulong) (_ptr i _ulong) -> _void)
+;; (defx11* XLookUpAssoc            : -> _string)
+(defx11* XLookupString              : _XKeyEvent-pointer _string _int (_ptr i _ulong) _XComposeStatus-pointer -> _int)
+(defx11* XMatchVisualInfo           : _XDisplay-pointer _int _int _int _XVisualInfo-pointer -> _int)
+(defx11* XOffsetRegion              : _XRegion-pointer _int _int -> _int)
+(defx11* XDefaultString             : -> _string)
+(defx11* XPolygonRegion             : _XPoint-pointer _int _int -> _XRegion-pointer)
+(defx11* XDeleteContext             : _XDisplay-pointer _ulong _int -> _int)
+(defx11* XDestroyImage              : _XImage-pointer -> _int)
+(defx11* XPutPixel                  : _XImage-pointer _int _int _ulong -> _int)
+(defx11* XmbSetWMProperties         : _XDisplay-pointer _ulong _string _string (_ptr i _string) _int _XSizeHints-pointer _XWMHints-pointer _XClassHint-pointer -> _void)
+(defx11* XmbTextListToTextProperty  : _XDisplay-pointer (_ptr i _string) _int XICCEncodingStyle _XTextProperty-pointer -> _int)
+(defx11* XmbTextPropertyToTextList  : _XDisplay-pointer _XTextProperty-pointer _pointer (_ptr i _int) -> _int)
+(defx11* Xpermalloc                 : _uint -> _pointer)
+(defx11* XSaveContext               : _XDisplay-pointer _ulong _int _string -> _int)
+(defx11* XwcFreeStringList          : _pointer -> _void)
+(defx11* XwcTextListToTextProperty  : _XDisplay-pointer _pointer _int XICCEncodingStyle _XTextProperty-pointer -> _int)
+(defx11* XwcTextPropertyToTextList  : _XDisplay-pointer _XTextProperty-pointer _pointer (_ptr i _int) -> _int)
+(defx11* XSetClassHint              : _XDisplay-pointer _ulong _XClassHint-pointer -> _int)
+(defx11* XSetWMProperties           : _XDisplay-pointer _ulong _XTextProperty-pointer _XTextProperty-pointer (_ptr i _string) _int _XSizeHints-pointer _XWMHints-pointer _XClassHint-pointer -> _void)
 
   ;; this just makes sure everything listed in the x11 manual is
   ;; defined somewhere above
