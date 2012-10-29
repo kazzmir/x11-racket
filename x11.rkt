@@ -1692,17 +1692,17 @@ int count;		/* defines range of change w. first_keycode*/
   ;@@ XNextEvent
   (defx11* XNextEvent : _XDisplay-pointer _XEvent-pointer -> _int)
   (defx11* (XNextEvent* display)
-    (printf "In XNextEvent*\n")
+    ;(printf "In XNextEvent*\n")
     (let ((e (make-dummy-XEvent))
           #;(make-XEvent 'LASTEvent 0 0)
           (push-tags! (λ(e . tags)(for [(t tags)] (cpointer-push-tag! e t))))
           )
-      (printf "Getting event... ")
+      ;(printf "Getting event... ")
       (XNextEvent display e)
-      (printf "Ok.\n")
-      (printf "Pushing XAnyEvent tag... ")
+      ;(printf "Ok.\n")
+      ;(printf "Pushing XAnyEvent tag... ")
       (cpointer-push-tag! e XAnyEvent-tag)
-      (printf "Ok.\n")
+      ;(printf "Ok.\n")
       (case (XAnyEvent-type e)
         ((KeyPress)          (push-tags! e XKeyEvent-tag XKeyPressedEvent-tag))
         ((KeyRelease)        (push-tags! e XKeyEvent-tag XKeyReleasedEvent-tag))
@@ -1739,7 +1739,7 @@ int count;		/* defines range of change w. first_keycode*/
         ((MappingNotify)     (push-tags! e XMappingEvent-tag))
        ;(else (printf "No tag added!\n"))
         )
-      (printf "After pushing all tags\n")
+      ;(printf "After pushing all tags\n")
       e))
 
   (defx11* XGetGeometry :
@@ -2531,6 +2531,9 @@ int count;		/* defines range of change w. first_keycode*/
 
   ;; this just makes sure everything listed in the x11 manual is
   ;; defined somewhere above
+(module+ main
+  (require "keysym-util.rkt")
+  
   (define not-used
   (list 
     XAllPlanes  	 XESetWireToError  	 XSetClipRectangles
@@ -2593,19 +2596,19 @@ int count;		/* defines range of change w. first_keycode*/
     XGContextFromGC 	XSetTextProperty
     #;InitExtension 
     XGeometry 	XSetTile
-    #;IsCursorKey 	
+    IsCursorKey 	; see keysym-util.rkt
     XGetAtomName 	XSetTransientForHint
-    #;IsFunctionKey 	
+    IsFunctionKey 	
     XGetAtomNames 	XSetWMClientMachine
-    #;IsKeypadKey 	
+    IsKeypadKey 	
     XGetClassHint 	XSetWMColormapWindows
-    #;IsMiscFunctionKey 	
+    IsMiscFunctionKey 	
     XGetCommand 	XSetWMHints
-    #;IsModifierKey 	
+    IsModifierKey 	
     XGetDefault 	XSetWMIconName
-    #;IsPFKey 	
+    IsPFKey 	
     XGetErrorDatabaseText 	XSetWMName
-    #;IsPrivateKeypadKey 	
+    IsPrivateKeypadKey 	
     XGetErrorText 	XSetWMNormalHints
     #;LastKnownRequestProcessed 	
     XGetFontPath 	
@@ -2816,3 +2819,4 @@ int count;		/* defines range of change w. first_keycode*/
     XSetWMProperties
 
     ))
+)

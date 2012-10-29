@@ -8,34 +8,34 @@
 
 ;; key-sym: _ulong
 (define (IsKeypadKey keysym)
-  (and (keysym . >= . XK_KP_Space) (keysym . <= . XK_KP_Equal)))
+  (and (keysym . >= . XK-KP-Space) (keysym . <= . XK-KP-Equal)))
 
 (define (IsPrivateKeypadKey keysym)
   (and (keysym . >= . #x11000000) (keysym . <= . #x1100FFFF)))
 
 (define (IsCursorKey keysym) 
-  (and (keysym . >= . XK_Home) (keysym . < . XK_Select)))
+  (and (keysym . >= . XK-Home) (keysym . < . XK-Select)))
 
 (define (IsPFKey keysym) 
-  (and (keysym . >= . XK_KP_F1) (keysym . <= . XK_KP_F4)))
+  (and (keysym . >= . XK-KP-F1) (keysym . <= . XK-KP-F4)))
 
 (define (IsFunctionKey keysym)
-  (and (keysym . >= . XK_F1) (keysym . <= . XK_F35)))
+  (and (keysym . >= . XK-F1) (keysym . <= . XK-F35)))
 
 (define (IsMiscFunctionKey keysym)
-  (and (keysym . >= . XK_Select) (keysym . <= . XK_Break)))
+  (and (keysym . >= . XK-Select) (keysym . <= . XK-Break)))
 
-#|ifdef XK_XKB_KEYS
+#|ifdef XK-XKB-KEYS
 (define (IsModifierKey keysym)
   (or
-   (and (keysym . >= . XK_Shift_L) (keysym . <= . XK_Hyper_R))
-   (and (keysym . >= . XK_ISO_Lock)
-        (keysym . <= . XK_ISO_Last_Group_Lock))
-   (keysym . = . XK_Mode_switch)
-   (keysym . = . XK_Num_Lock)))
+   (and (keysym . >= . XK-Shift-L) (keysym . <= . XK-Hyper-R))
+   (and (keysym . >= . XK-ISO-Lock)
+        (keysym . <= . XK-ISO-Last-Group-Lock))
+   (keysym . = . XK-Mode-switch)
+   (keysym . = . XK-Num-Lock)))
 |#;else
 (define (IsModifierKey keysym)
-  (or (keysym . >= . XK_Shift_L) (keysym . <= . XK_Hyper_R)
-      (keysym . = . XK_Mode_switch)
-      (keysym . = . XK_Num_Lock)))
+  (or (keysym . >= . XK-Shift-L) (keysym . <= . XK-Hyper-R)
+      (keysym . = . XK-Mode-switch)
+      (keysym . = . XK-Num-Lock)))
 ;#endif
