@@ -7,18 +7,18 @@
 ;; 0.3 7/1/2007 - Added santa
 ;; 0.4 7/13/2007 - Added KDE fix back in
 ;; 0.5 9/9/2008 - Fixes for mzscheme 4.0
+;; 0.6 10/29/2012 - Fixes for racket 5.3
 
+#lang racket
 
-#lang scheme
-
-(require (lib "trace.ss"))
+; (require trace)
 ; (require (lib "errortrace.ss" "errortrace"))
 (require "x11.rkt")
 (require "x11-xpm.rkt")
-(require (lib "foreign.ss")) (unsafe!)
+(require ffi/unsafe)
+
+;; TODO: get rid of mpairs
 (require scheme/mpair)
-;; (require #%foreign)
-(require (lib "list.ss"))
 
 (define (real->int real)
   (inexact->exact (round real)))
@@ -1203,10 +1203,8 @@
                        (ret #t windows snow-allowed)))
                     (else
                       (begin
-                        (let* ((current-window (car children))
-                               (attrs (let ((wa (make-XWindowAttributes)))
-                                        (XGetWindowAttributes display current-window wa)
-                                        wa)))
+                        (let* [(current-window (car children))
+                               (attrs (XGetWindowAttributes display current-window))]
                           (when (XWindowAttributes-save-under attrs)
                             (loop (cdr children)))
                           (when (eq? 'IsViewable (XWindowAttributes-map-state attrs))
@@ -1450,38 +1448,37 @@
   )
 
 (define (update-santa santa wind display window)
-  (define screen-size (let ((attr (make-XWindowAttributes)))
-			(XGetWindowAttributes display window attr)
-			(XWindowAttributes-width attr)))
+  (define screen-size (let [(attr (XGetWindowAttributes display window))]
+                        (XWindowAttributes-width attr)))
   (let ((m (make-object (object-x santa)
-			(object-y santa)
-			0 0
-			#f #f #f
-			(mcar (santa-sleigh santa)))))
+                        (object-y santa)
+                        0 0
+                        #f #f #f
+                        (mcar (santa-sleigh santa)))))
     (erase-object m display window)
     (set-santa-sleigh! santa (mcdr (santa-sleigh santa)))
     (let ((y (real->int (+ (- (/ (random 20) 5) 2)
-			   (object-y santa)))))
+                           (object-y santa)))))
       (set-object-y! santa (cond
-			     ((< y 20) 20)
-			     ((> y 100) 100)
-			     (else y))))
+                             ((< y 20) 20)
+                             ((> y 100) 100)
+                             (else y))))
     (let ((dx (case wind
-		;; pushed backwards
-		((HardLeft) -3.5)
-		;; struggling to move
-		((SlowLeft) 2.5)
-		;; normal walking
-		((NoWind) 4)
-		;; speed up
-		((SlowRight) 5.5)
-		;; lets go!
-		((HardRight) 8.0))))
+                ;; pushed backwards
+                ((HardLeft) -3.5)
+                ;; struggling to move
+                ((SlowLeft) 2.5)
+                ;; normal walking
+                ((NoWind) 4)
+                ;; speed up
+                ((SlowRight) 5.5)
+                ;; lets go!
+                ((HardRight) 8.0))))
       (let ((nx (real->int (+ dx (object-x santa)))))
-	(set-object-x! santa (cond
-			       ((> nx screen-size) (- (object-width santa)))
-			       ((< nx (- (object-width santa))) screen-size)
-			       (else nx)))))
+        (set-object-x! santa (cond
+                               ((> nx screen-size) (- (object-width santa)))
+                               ((< nx (- (object-width santa))) screen-size)
+                               (else nx)))))
 
     (draw-santa santa display window)))
 
@@ -1775,4 +1772,4 @@
   (define (run)
     (xsnow 100))
 
-;; (run)
+(run)
