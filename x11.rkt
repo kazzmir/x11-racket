@@ -62,17 +62,22 @@
   ;; just provide the above
   (define-syntax defx11*
     (syntax-rules (:)
-      ((_ id : x ...)
+      [(_ id : x ...)
        (begin
-	 (defx11 id : x ...)
-	 (provide id)))
-      ((_ (id x ...) expr ...)
+         (defx11 id : x ...)
+         (provide id))]
+      [(_ (id x ...) expr ...)
        (begin
-	 (provide id)
-	 (define id (lambda (x ...)
-		      expr ...))))))
+         (provide id)
+         (define id (lambda (x ...)
+                      expr ...)))]))
 
   (define* Status _int)
+  (define* (status-fail? status)
+    (= 0 status))
+  (define* (status-ok? status)
+    (not (status-fail? status)))
+  
   (define* Pixel _ulong)
   (define* XID _ulong)
   (define* Time _ulong)
@@ -245,13 +250,13 @@
 	      _uint))
 
   (define WindowChanges-long
-    (_bitmask '(X =           #b0000001
-		Y =           #b0000010
-		Width =       #b0000100
-		Height =      #b0001000
-		BorderWidth = #b0010000
-		Sibling =     #b0100000
-		StackMode =   #b1000000)
+    (_bitmask '(X =      #b0000001
+		Y =            #b0000010
+		Width =        #b0000100
+		Height =       #b0001000
+		BorderWidth =  #b0010000
+		Sibling =      #b0100000
+		StackMode =    #b1000000)
 	      _ulong))
 
   (define ChangeWindowAttributes
@@ -570,9 +575,9 @@ Display,
   ;; Im too lazy to really figure out what this should be
   ;; so ill just overcompensate
   ;; Explanation: (Laurent Orseau -- 2012-10-27)
-  ;; XEvent is defined as a union (of XKeyPressedEvent, XButtonPressedEvent, etc.) in xlib.h,
+  ;; XEvent is defined as a union (of XKeyPressedEvent, XButtonPressedEvent, etc.) in Xlib.h,
   ;; but there is (yet) nothing exactly equivalent in Racket (except _union which is not perfect).
-  ;; The idea here is very simple though: 
+  ;; The idea here is simple though: 
   ;; The type of a pointer as considered by Racket is checked with its cpointer-tag list,
   ;; Further down this file, the XNextEvent* procedure adds the correct tag to the list,
   ;; depending on the received event (and returns the event).
@@ -583,10 +588,16 @@ Display,
     ((type EventType)))
 
   ;; more laziness
+  ;; Instead of making the union of all the possible event types,
+  ;; we just create an empty event of the maximum size and 
+  ;; then turn it into the correct type using pointer-tag
   (define (make-dummy-XEvent)
     ;; 24 comes from Xlib.h
     ;; typedef union XEvent { ...; long pad[24]; }
-    (let ((s (malloc _int (* 24 (ctype-sizeof _long)))))
+    ;(let ([s (malloc _int (* 24 (ctype-sizeof _long)))])
+    ; from the docs, the above would result in  (* 24 (ctype-sizeof _int) (ctype-sizeof _long))
+    (let ([s (malloc 24 _long)])
+    ;(let ([s (malloc _long 24 'raw)]) ; for testing:(WARNING: memory leak) ; Nope, still crashes...
       (memset s 0 24 _long)
       (cpointer-push-tag! s XEvent-tag)
       s))
@@ -645,7 +656,7 @@ Bool same_screen;	/* same screen flag */
 		   ;(state _uint)
 		   (state Modifiers) ; Laurent Orseau -- 2012-10-26
 		   (keycode _uint)
-		   ;(keycode KeyCode) ; no, we can't, beause KeyCode is _ubyte...
+		   ;(keycode KeyCode) ; no, we can't, beause KeyCode is _ubyte... go figure...
 		   (same-screen _bool)))
 
   (define-cstructs* (_XButtonEvent _XButtonPressedEvent _XButtonReleasedEvent)
@@ -940,7 +951,8 @@ Bool same_screen;	/* same screen flag */
      (format _int)
      (data _cvector)))
   
-  ; Laurent Orseau -- 2012-10-27
+  ;; Laurent Orseau -- 2012-10-27
+  ;; It's not really an XEvent?
   (define-cstruct* _XErrorEvent
     ((type EventType)
      (display _XDisplay-pointer)
@@ -1409,14 +1421,14 @@ int auto_repeat_mode;   /* On, Off, Default */
 |#
 
   (define-cstruct _XKeyboardControl
-		  ((key-click-percent _int)
-		   (bell-percent _int)
-		   (bell-pitch _int)
-		   (bell-duration _int)
-		   (led _int)
-		   (led-mode _int)
-		   (key _int)
-		   (auto-repeat-mode _int)))
+    ((key-click-percent _int)
+     (bell-percent _int)
+     (bell-pitch _int)
+     (bell-duration _int)
+     (led _int)
+     (led-mode _int)
+     (key _int)
+     (auto-repeat-mode _int)))
 
   (define-cstruct _XRegion
     ((size _long)
@@ -1424,9 +1436,9 @@ int auto_repeat_mode;   /* On, Off, Default */
      (rects _Box-pointer)
      (extends _Box)))
 
-  (define-cstruct _XClassHint
-		  ((res-name _string)
-		   (res-class _string)))
+  (define-cstruct* _XClassHint
+    ((res-name _string)
+     (res-class _string)))
 
   (define-cstruct _XFontSet ((a _int)))
   (define-cstruct _XrmHashBucketRec ((a _int)))
@@ -1436,8 +1448,8 @@ int auto_repeat_mode;   /* On, Off, Default */
   (define-cstruct _XIC ((a _int)))
 
   (define-cstruct _XComposeStatus
-		  ((compose-prt _pointer)
-		   (chars-matched _int)))
+    ((compose-prt _pointer)
+     (chars-matched _int)))
 
 #|
 typedef struct {
@@ -1712,17 +1724,22 @@ int count;		/* defines range of change w. first_keycode*/
       ;(printf "Getting event... display=~a e=~a" display e)(flush-output)
       ;(XPeekEvent display e) ; just in case
       ;(printf "After XPeekEvent\n")(flush-output)
+      ; WARNING: I have some crashes on XNExtEvent with MotionEvent
+      ; I can't find where it comes from...
+      ; (same with XPeekEvent)
+      ;(printf "e: ~a\n" e) ; is it null ? ; No crash when I print e?!
       (XNextEvent display e)
       ;(printf "Ok.\n")(flush-output)
       ;(printf "Pushing XAnyEvent tag... ")(flush-output)
       (cpointer-push-tag! e XAnyEvent-tag)
       ;(printf "Ok.\n")(flush-output)
       (case (XAnyEvent-type e)
+        ; place the most specific type at the end since it's the the one that is printed.
         ((KeyPress)          (push-tags! e XKeyEvent-tag XKeyPressedEvent-tag))
         ((KeyRelease)        (push-tags! e XKeyEvent-tag XKeyReleasedEvent-tag))
         ((ButtonPress)       (push-tags! e XButtonEvent-tag XButtonPressedEvent-tag))
         ((ButtonRelease)     (push-tags! e XButtonEvent-tag XButtonReleasedEvent-tag))
-        ((MotionNotify)      (push-tags! e XPointerMovedEvent-tag XMotionEvent-tag))
+        ((MotionNotify)      (push-tags! e XMotionEvent-tag XPointerMovedEvent-tag))
         ((EnterNotify)       (push-tags! e XCrossingEvent-tag XEnterWindowEvent-tag))
         ((LeaveNotify)       (push-tags! e XCrossingEvent-tag XLeaveWindowEvent-tag))
         ((FocusIn)           (push-tags! e XFocusChangeEvent-tag XFocusInEvent-tag))
@@ -2062,14 +2079,13 @@ int count;		/* defines range of change w. first_keycode*/
 
   (defx11* XGetClassHint : _XDisplay-pointer Window (hint : (_ptr o _XClassHint)) -> (s : Status) -> (values s hint))
 
+  (provide (rename-out [XSetWMColormapWindows-user XSetWMColormapWindows]))
   (defx11 XSetWMColormapWindows : _XDisplay-pointer Window _pointer _int -> Status)
-  (provide (rename-out (XSetWMColormapWindows-user XSetWMColormapWindows)))
   (define (XSetWMColormapWindows-user display window colormaps count)
     (XSetWMColormapWindows display window (list->cblock colormaps Window count) count))
 
+  (provide (rename-out [XGetCommand-user XGetCommand]))
   (defx11 XGetCommand : _XDisplay-pointer Window (strings : (_ptr o _pointer)) (count : (_ptr o _int)) -> (s : Status) -> (values s strings count))
-
-  (provide (rename-out (XGetCommand-user XGetCommand)))
   (define (XGetCommand-user display window)
     (let-values (((status strings count) (XGetCommand display window)))
       (values status
@@ -2082,8 +2098,8 @@ int count;		/* defines range of change w. first_keycode*/
 
   (defx11* XSetWMIconName : _XDisplay-pointer Window _XTextProperty-pointer -> _void)
 
+  (provide (rename-out [XGetErrorDatabaseText-user XGetErrorDatabaseText]))
   (defx11 XGetErrorDatabaseText : _XDisplay-pointer _string _string _pointer _int -> _int)
-  (provide XGetErrorDatabaseText-user XGetErrorDatabaseText)
   (define (XGetErrorDatabaseText-user display name message length)
     (let ((str (malloc _byte length)))
       (XGetErrorDatabaseText display name message str length)
@@ -2091,28 +2107,29 @@ int count;		/* defines range of change w. first_keycode*/
 
   (defx11* XSetWMName : _XDisplay-pointer Window _XTextProperty-pointer -> _void)
 
+ (provide (rename-out [XGetErrorText-user XGetErrorText]))
   (defx11 XGetErrorText : _XDisplay-pointer _int _pointer (length : _int) -> _int)
   (define (XGetErrorText-user display code length)
     (let ((str (malloc _byte length)))
       (XGetErrorText display code str length)
       str))
-
+ 
   (defx11* XSetWMNormalHints : _XDisplay-pointer Window _XSizeHints-pointer -> _void)
 
+  (provide (rename-out [XGetFontPath-user XGetFontPath]))
   (defx11 XGetFontPath : _XDisplay-pointer (paths : (_ptr o _int)) -> (ret : _pointer) -> (values ret paths))
-  (provide (rename-out (XGetFontPath-user XGetFontPath)))
   (define (XGetFontPath-user display)
     (let-values (((block num) (XGetFontPath display)))
       (cblock->list block _string num)))
 
+  (provide (rename-out [XGetFontProperty-user XGetFontProperty]))
   (defx11 XGetFontProperty : _XFontStruct-pointer Atom (value : (_ptr i _int)) -> (ret : _bool) -> (values ret value))
-  (provide (rename-out (XGetFontProperty-user XGetFontProperty)))
   (define (XGetFontProperty-user font atom)
     (let-values (((ok value) (XGetFontProperty font atom)))
       (if ok value ok)))
 
+  (provide (rename-out [XSetWMProtocols-user XSetWMProtocols]))
   (defx11 XSetWMProtocols : _XDisplay-pointer Window _pointer _int -> _int)
-  (provide (rename-out (XSetWMProtocols-user XSetWMProtocols)))
   (define (XSetWMProtocols-user display window protocols)
     (let ((n (length protocols)))
       (XSetWMProtocols display window (list->cblock protocols Atom) n)))
