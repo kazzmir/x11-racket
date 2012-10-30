@@ -8,6 +8,8 @@
 - most functions don't have the correct type
   They must use the defined types instead of _int, _uint, etc.
 
+- When functions return a status-fail?, print an error/warning (if debug is on?)
+
 |#
 
   (require ffi/unsafe
@@ -72,11 +74,19 @@
          (define id (lambda (x ...)
                       expr ...)))]))
 
+  ;; We should make a guarded/wrapped ctype
+  ;; to check for failures.
   (define* Status _int)
   (define* (status-fail? status)
     (= 0 status))
   (define* (status-ok? status)
     (not (status-fail? status)))
+  
+  ;; we could make a transformer for that, if we want to keep a variable-like object.
+  (define* (get-Xdebug)
+    (get-ffi-obj '_Xdebug libx11 _bool))
+  (define* (set-Xdebug! b)
+    (set-ffi-obj! '_Xdebug libx11 _bool b))
   
   (define* Pixel _ulong)
   (define* XID _ulong)
@@ -2108,11 +2118,11 @@ int count;		/* defines range of change w. first_keycode*/
   (defx11* XSetWMName : _XDisplay-pointer Window _XTextProperty-pointer -> _void)
 
  (provide (rename-out [XGetErrorText-user XGetErrorText]))
-  (defx11 XGetErrorText : _XDisplay-pointer _int _pointer (length : _int) -> _int)
-  (define (XGetErrorText-user display code length)
-    (let ((str (malloc _byte length)))
-      (XGetErrorText display code str length)
-      str))
+ (defx11 XGetErrorText : _XDisplay-pointer _int _pointer (length : _int) -> _int)
+ (define (XGetErrorText-user display code length)
+   (let ((str (malloc _byte length)))
+     (XGetErrorText display code str length)
+     str))
  
   (defx11* XSetWMNormalHints : _XDisplay-pointer Window _XSizeHints-pointer -> _void)
 
@@ -2161,9 +2171,9 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XKeysymToString : KeySym -> _string)
 
 ;; FIXME
-(defx11* XSynchronize : _XDisplay-pointer _int -> (_fun _XDisplay-pointer _bool -> _int))
-
-(defx11* XSetAfterFunction : _XDisplay-pointer (_fun _void -> _int) -> (_fun _int -> _int))
+;; Should be ok ; Laurent Orseau -- 2012-10-30
+(defx11* XSynchronize : _XDisplay-pointer _bool -> (_fun _XDisplay-pointer -> _int))
+(defx11* XSetAfterFunction : _XDisplay-pointer (_fun _XDisplay-pointer -> _int) -> (_fun _XDisplay-pointer -> _int))
 
 (defx11* XInternAtoms : _XDisplay-pointer (_ptr i _string) _int _int (_ptr i _ulong) -> _int)
 (defx11* XCopyColormapAndFree : _XDisplay-pointer _ulong -> _ulong)
