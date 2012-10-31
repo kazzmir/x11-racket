@@ -40,15 +40,17 @@
 
   (define-syntax defx11
     (syntax-rules (:)
-      #;
-      ((_ id : x ...)
+      
+      ;; Use this definition for debugging (todo: use a variable to decide that)
+      [(_ id : x ...)
        (define id
-         (let ((f (get-ffi-obj (regexp-replaces 'id '((#rx"-" "_")))
+         (let ((f (get-ffi-obj (regexp-replaces (symbol->string 'id) '((#rx"-" "_")))
                                libx11 (_fun x ...))))
            (lambda v
              (printf "~a ~a\n" 'id v)
-             (apply f v)))))
-
+             (apply f v))))]
+      #;
+      ;; Use this definition for normal use
       [(_ id : x ...)
        (begin
          (define func
@@ -964,7 +966,7 @@ Bool same_screen;	/* same screen flag */
   ;; Laurent Orseau -- 2012-10-27
   ;; It's not really an XEvent?
   (define-cstruct* _XErrorEvent
-    ((type EventType)
+    ((type _int)
      (display _XDisplay-pointer)
      (resourceid XID)
      (serial _ulong)
@@ -2118,9 +2120,12 @@ int count;		/* defines range of change w. first_keycode*/
   (defx11* XSetWMName : _XDisplay-pointer Window _XTextProperty-pointer -> _void)
 
  (provide (rename-out [XGetErrorText-user XGetErrorText]))
- (defx11 XGetErrorText : _XDisplay-pointer _int _pointer (length : _int) -> _int)
+ ;(defx11 XGetErrorText : _XDisplay-pointer _int _pointer (length : _int) -> _void)
+ (defx11 XGetErrorText : _XDisplay-pointer _int _bytes (length : _int) -> _void)
  (define (XGetErrorText-user display code length)
-   (let ((str (malloc _byte length)))
+   ;(let ((str (malloc _byte length)))
+   (let ([str (make-bytes length)])
+     ;(cpointer-push-tag! str ...)
      (XGetErrorText display code str length)
      str))
  
@@ -2318,9 +2323,9 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XGetTransientForHint : _XDisplay-pointer _ulong (_ptr i _ulong) -> _int)
 ;(defx11* XGrabButton : _XDisplay-pointer XK-Pointer Modifiers Window _bool InputMask GrabMode GrabMode Window Cursor -> _int)
 ; apparently the button number is not an XK-Pointer...
-(defx11* XGrabButton : _XDisplay-pointer _uint Modifiers Window _bool InputMask GrabMode GrabMode Window Cursor -> _int)
+(defx11* XGrabButton : _XDisplay-pointer _uint Modifiers Window _bool InputMask GrabMode GrabMode Window Cursor -> _void)
 ;(defx11* XGrabKey : _XDisplay-pointer _int _uint _ulong _int _int _int -> _int)
-(defx11* XGrabKey : _XDisplay-pointer KeyCode Modifiers Window _bool GrabMode GrabMode -> _int)
+(defx11* XGrabKey : _XDisplay-pointer KeyCode Modifiers Window _bool GrabMode GrabMode -> _void)
 ; can generate BadAccess , BadValue , and BadWindow errors. 
 (defx11* XGrabKeyboard : _XDisplay-pointer _ulong _int _int _int _ulong -> _int)
 ;@@ XGrabPointer
