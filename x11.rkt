@@ -22,6 +22,20 @@
 
   (define libx11 (ffi-lib "libX11"))
 
+  ;; checks the environment for a DEBUG variable
+  (define-for-syntax (debugging-enabled?)
+    ;; will return #f if DEBUG is not defined
+    (getenv "DEBUG"))
+
+  ;; give it two expressions, it will select the correct one depending
+  ;; on whether debugging is currently enabled
+  (define-syntax (debug stx)
+    (syntax-case stx ()
+      [(_ non-debugged debugged)
+       (if (debugging-enabled?)
+         #'debugged
+         #'non-debugged)]))
+
   (define-syntax defx11
     (syntax-rules (:)
       #;
@@ -34,9 +48,16 @@
              (apply f v)))))
 
       [(_ id : x ...)
-       (define id
-         (get-ffi-obj (regexp-replaces (symbol->string 'id) '((#rx"-" "_")))
-                      libx11 (_fun x ...)))]))
+       (begin
+         (define func
+           (get-ffi-obj (regexp-replaces (symbol->string 'id) '((#rx"-" "_")))
+                        libx11 (_fun x ...)))
+         ;; use debug to select between the two things so we don't always
+         ;; pay the cost of an extra lambda on top of the ffi function
+         (debug (define id func)
+                (define (id . v)
+                  (printf "~a: ~a\n" 'id v)
+                  (apply func v))))]))
 
   ;; just provide the above
   (define-syntax defx11*
