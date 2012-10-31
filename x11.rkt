@@ -246,6 +246,10 @@
 		Button4Mask  = #b0100000000000
 		Button5Mask  = #b1000000000000
 		Any          = #x8000)))
+  
+  (define* keyboard-modifiers 
+    #(ShiftMask  LockMask  ControlMask  Mod1Mask  Mod2Mask  Mod3Mask  Mod4Mask  Mod5Mask))
+
 
   (define GrabMode
     (_enum '(GrabModeSync = 0
@@ -351,8 +355,7 @@
   (define* CopyFromParent #f)
   (define* CopyFromParent/int 0)
   (define* None 0)
-  (define* (None? x) (equal? x None))
-  ; I would prefer to turn all None into #f, it would be simpler to deal with...
+  (define* (None? x) (or (not x) (equal? x None))) ; sometimes the null pointer is turned into #f, sometimes into 0?
 
   (define* InputMask ;sometimes called event_mask
     (_bitmask '(NoEventMask =              #x00000000
@@ -1298,7 +1301,7 @@ int (*add_pixel)            (struct _XImage *, long);
     ((x _short)
      (y _short)))
 
-  (define-cstruct _XModifierKeymap
+  (define-cstruct* _XModifierKeymap
     ((max-keypermod _int)
      (modifiermap _pointer)))
 
@@ -2125,9 +2128,9 @@ int count;		/* defines range of change w. first_keycode*/
  (define (XGetErrorText-user display code length)
    ;(let ((str (malloc _byte length)))
    (let ([str (make-bytes length)])
-     ;(cpointer-push-tag! str ...)
      (XGetErrorText display code str length)
-     str))
+     ;str))
+     (make-sized-byte-string str length))) ; ?
  
   (defx11* XSetWMNormalHints : _XDisplay-pointer Window _XSizeHints-pointer -> _void)
 
@@ -2164,7 +2167,40 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XQueryFont : _XDisplay-pointer _ulong -> _XFontStruct-pointer)
 (defx11* XGetMotionEvents : _XDisplay-pointer _ulong _ulong _ulong (_ptr i _int) -> _XTimeCoord-pointer)
 (defx11* XDeleteModifiermapEntry : _XModifierKeymap-pointer _ubyte _int -> _XModifierKeymap-pointer)
-(defx11* XGetModifierMapping : _XDisplay-pointer -> _XModifierKeymap-pointer)
+;(defx11* XGetModifierMapping : _XDisplay-pointer -> _XModifierKeymap-pointer)
+;@@ XGetModifierMapping
+(defx11* XGetModifierMapping : _XDisplay-pointer -> _XModifierKeymap-pointer/null)
+(define* (XModifierKeymap->vector keymap)
+  (begin0
+    (and keymap
+         (cblock->vector (XModifierKeymap-modifiermap keymap) KeyCode
+                         (* 8 ;(vector-length keyboard-modifiers)
+                            (XModifierKeymap-max-keypermod keymap))))
+    ))
+;Test:
+#;(begin 
+    (define d (XOpenDisplay ":0"))
+    (define k (XGetModifierMapping d))
+    (define mods (XModifierKeymap->vector/free k))
+    (require "keysymdef.rkt")
+    (map (λ(s)(XKeysymToKeycode d s))
+       (list XK-Control-L
+             XK-Control-R
+             XK-Caps-Lock
+             XK-Shift-Lock
+             XK-Num-Lock
+             XK-Scroll-Lock
+             XK-Meta-L
+             XK-Meta-R
+             XK-Alt-L
+             XK-Alt-R
+             XK-Super-L
+             XK-Super-R
+             XK-Hyper-L
+             XK-Hyper-R
+             ))
+    )
+           
 (defx11* XInsertModifiermapEntry : _XModifierKeymap-pointer _ubyte _int -> _XModifierKeymap-pointer)
 (defx11* XNewModifiermap : _int -> _XModifierKeymap-pointer)
 (defx11* XCreateImage : _XDisplay-pointer _Visual-pointer _uint _int _int _string _uint _uint _int _int -> _XImage-pointer)

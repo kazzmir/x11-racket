@@ -6,8 +6,6 @@
 ;;; from keysymdef.h
 ;;; Author: Laurent Orseau -- laurent orseau gmail com
 
-;;; see also keysymtype.rkt
-
 #| 
 Generated with (except the -enum definition header):
 
