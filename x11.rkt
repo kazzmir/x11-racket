@@ -2167,8 +2167,8 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XQueryFont : _XDisplay-pointer _ulong -> _XFontStruct-pointer)
 (defx11* XGetMotionEvents : _XDisplay-pointer _ulong _ulong _ulong (_ptr i _int) -> _XTimeCoord-pointer)
 (defx11* XDeleteModifiermapEntry : _XModifierKeymap-pointer _ubyte _int -> _XModifierKeymap-pointer)
-;(defx11* XGetModifierMapping : _XDisplay-pointer -> _XModifierKeymap-pointer)
 ;@@ XGetModifierMapping
+;(defx11* XGetModifierMapping : _XDisplay-pointer -> _XModifierKeymap-pointer)
 (defx11* XGetModifierMapping : _XDisplay-pointer -> _XModifierKeymap-pointer/null)
 (define* (XModifierKeymap->vector keymap)
   (begin0
@@ -2181,25 +2181,8 @@ int count;		/* defines range of change w. first_keycode*/
 #;(begin 
     (define d (XOpenDisplay ":0"))
     (define k (XGetModifierMapping d))
-    (define mods (XModifierKeymap->vector/free k))
-    (require "keysymdef.rkt")
-    (map (λ(s)(XKeysymToKeycode d s))
-       (list XK-Control-L
-             XK-Control-R
-             XK-Caps-Lock
-             XK-Shift-Lock
-             XK-Num-Lock
-             XK-Scroll-Lock
-             XK-Meta-L
-             XK-Meta-R
-             XK-Alt-L
-             XK-Alt-R
-             XK-Super-L
-             XK-Super-R
-             XK-Hyper-L
-             XK-Hyper-R
-             ))
-    )
+    (define mods (XModifierKeymap->vector k)
+    (XFreeModifiermap k)))
            
 (defx11* XInsertModifiermapEntry : _XModifierKeymap-pointer _ubyte _int -> _XModifierKeymap-pointer)
 (defx11* XNewModifiermap : _int -> _XModifierKeymap-pointer)
