@@ -49,7 +49,7 @@
          ;; pay the cost of an extra lambda on top of the ffi function
          (debug (define id func)
                 (define (id . v)
-                  (printf "~a: ~a\n" 'id v)
+                  (printf "~a~a: ~a\n" (x11-debug-prefix) 'id v)
                   (apply func v))))]))
 
   ;; just provide the above
@@ -64,6 +64,9 @@
          (provide id)
          (define id (lambda (x ...)
                       expr ...)))]))
+  
+  ;; Parameter to control how debug messages are printed
+  (define* x11-debug-prefix (make-parameter ""))
 
   ;; We should make a guarded/wrapped ctype
   ;; to check for failures.
