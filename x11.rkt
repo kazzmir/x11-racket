@@ -27,7 +27,7 @@
   ;; checks the environment for a DEBUG variable
   (define-for-syntax (debugging-enabled?)
     ;; will return #f if DEBUG is not defined
-    (getenv "DEBUG"))
+    (getenv "X11_RACKET_DEBUG"))
 
   ;; give it two expressions, it will select the correct one depending
   ;; on whether debugging is currently enabled
