@@ -24,7 +24,10 @@
 
   (define libx11 (ffi-lib "libX11"))
 
-  ;; checks the environment for a DEBUG variable
+  ;; Checks the environment for a DEBUG variable
+  ;; Usage example: X11_RACKET_DEBUG=1 racket test-x11.rkt
+  ;; But be warned that *compilation* must be done with this flag,
+  ;; and so it depends on various things (raco make, DrRacket, racket)
   (define-for-syntax (debugging-enabled?)
     ;; will return #f if DEBUG is not defined
     (getenv "X11_RACKET_DEBUG"))
@@ -49,8 +52,9 @@
          ;; pay the cost of an extra lambda on top of the ffi function
          (debug (define id func)
                 (define (id . v)
-                  (printf "~a~a: ~a\n" (x11-debug-prefix) 'id v)
-                  (apply func v))))]))
+                  (let ([res (apply func v)])
+                    (printf "~a~a: ~a -> ~a\n" (x11-debug-prefix) 'id v res)
+                    res))))]))
 
   ;; just provide the above
   (define-syntax defx11*
