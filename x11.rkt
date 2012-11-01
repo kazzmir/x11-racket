@@ -66,6 +66,7 @@
                       expr ...)))]))
   
   ;; Parameter to control how debug messages are printed
+  ;; (useful for grepping)
   (define* x11-debug-prefix (make-parameter ""))
 
   ;; We should make a guarded/wrapped ctype
