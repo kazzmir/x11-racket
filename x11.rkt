@@ -31,12 +31,16 @@
   (define-for-syntax (debugging-enabled?)
     ;; will return #f if DEBUG is not defined
     (getenv "X11_RACKET_DEBUG"))
+  
+  (define (x11-dprintf str . args)
+    (printf (x11-debug-prefix))
+    (apply printf str args))
 
   ;; give it two expressions, it will select the correct one depending
   ;; on whether debugging is currently enabled
-  (define-syntax (debug stx)
+  (define-syntax (if-debug stx)
     (syntax-case stx ()
-      [(_ non-debugged debugged)
+      [(_ debugged non-debugged)
        (if (debugging-enabled?)
          #'debugged
          #'non-debugged)]))
@@ -50,11 +54,13 @@
                         libx11 (_fun x ...)))
          ;; use debug to select between the two things so we don't always
          ;; pay the cost of an extra lambda on top of the ffi function
-         (debug (define id func)
-                (define (id . v)
-                  (let ([res (apply func v)])
-                    (printf "~a~a: ~a -> ~a\n" (x11-debug-prefix) 'id v res)
-                    res))))]))
+         (if-debug (define (id . v)
+                     (x11-dprintf "~a: ~a" 'id v)
+                     (flush-output)
+                     (let ([res (apply func v)])
+                       (printf " -> ~a\n" res)
+                       res))
+                   (define id func)))]))
 
   ;; just provide the above
   (define-syntax defx11*
@@ -353,6 +359,8 @@
   (define* CopyFromParent/int 0)
   (define* None 0)
   (define* (None? x) (or (not x) (equal? x None))) ; sometimes the null pointer is turned into #f, sometimes into 0?
+  
+  (define* CurrentTime 0);(get-ffi-obj 'CurrentTime libx11 _long)) ; nope...
 
   (define* InputMask ;sometimes called event_mask
     (_bitmask '(NoEventMask =              #x00000000
@@ -2345,7 +2353,14 @@ int count;		/* defines range of change w. first_keycode*/
 ; can generate BadAccess , BadValue , and BadWindow errors. 
 (defx11* XGrabKeyboard : _XDisplay-pointer _ulong _int _int _int _ulong -> _int)
 ;@@ XGrabPointer
-(defx11* XGrabPointer : _XDisplay-pointer Window _bool InputMask GrabMode GrabMode Window Cursor Time -> _int)
+(define xgrabpointer-return-code #(GrabSuccess AlreadyGrabbed GrabInvalidTime GrabNotViewable GrabFrozen))
+(defx11* XGrabPointer : _XDisplay-pointer Window _bool InputMask GrabMode GrabMode Window Cursor Time 
+  -> (ret : _int)
+  -> (if-debug (begin (when (> ret 0) 
+                        (x11-dprintf "Error: XGrabPointer failed with code ~a: ~a\n" ret
+                                     (vector-ref xgrabpointer-return-code ret)))
+                      ret)
+               ret))
 (defx11* XHeightMMOfScreen : _Screen-pointer -> _int)
 (defx11* XHeightOfScreen : _Screen-pointer -> _int)
 
