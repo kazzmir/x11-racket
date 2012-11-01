@@ -40,17 +40,6 @@
 
   (define-syntax defx11
     (syntax-rules (:)
-      
-      ;; Use this definition for debugging (todo: use a variable to decide that)
-      [(_ id : x ...)
-       (define id
-         (let ((f (get-ffi-obj (regexp-replaces (symbol->string 'id) '((#rx"-" "_")))
-                               libx11 (_fun x ...))))
-           (lambda v
-             (printf "~a ~a\n" 'id v)
-             (apply f v))))]
-      #;
-      ;; Use this definition for normal use
       [(_ id : x ...)
        (begin
          (define func
