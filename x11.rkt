@@ -2390,20 +2390,22 @@ int count;		/* defines range of change w. first_keycode*/
 
 (defx11* XPeekIfEvent : _XDisplay-pointer _XEvent-pointer (_fun _XDisplay-pointer _XEvent-pointer _pointer -> _bool) _pointer -> _int)
 
-(defx11* XPlanesOfScreen : _Screen-pointer -> _int)
-(defx11* XProtocolRevision : _XDisplay-pointer -> _int)
-(defx11* XProtocolVersion : _XDisplay-pointer -> _int)
-(defx11* XPutBackEvent : _XDisplay-pointer _XEvent-pointer -> _int)
-(defx11* XPutImage : _XDisplay-pointer _ulong _XGC-pointer _XImage-pointer _int _int _int _int _uint _uint -> _int)
-(defx11* XQLength : _XDisplay-pointer -> _int)
-(defx11* XQueryBestCursor : _XDisplay-pointer _ulong _uint _uint (_ptr i _uint) (_ptr i _uint) -> _int)
-(defx11* XQueryBestSize : _XDisplay-pointer _int _ulong _uint _uint (_ptr i _uint) (_ptr i _uint) -> _int)
-(defx11* XQueryBestStipple : _XDisplay-pointer _ulong _uint _uint (_ptr i _uint) (_ptr i _uint) -> _int)
-(defx11* XQueryBestTile : _XDisplay-pointer _ulong _uint _uint (_ptr i _uint) (_ptr i _uint) -> _int)
-(defx11* XQueryColor : _XDisplay-pointer _ulong _XColor-pointer -> _int)
-(defx11* XQueryColors : _XDisplay-pointer _ulong _XColor-pointer _int -> _int)
-(defx11* XQueryExtension : _XDisplay-pointer _string (_ptr i _int) (_ptr i _int) (_ptr i _int) -> _int)
-(defx11* XQueryKeymap : _XDisplay-pointer _string -> _int)
+(defx11* XPlanesOfScreen    : _Screen-pointer -> _int)
+(defx11* XProtocolRevision  : _XDisplay-pointer -> _int)
+(defx11* XProtocolVersion   : _XDisplay-pointer -> _int)
+(defx11* XPutBackEvent      : _XDisplay-pointer _XEvent-pointer -> _int)
+(defx11* XPutImage          : _XDisplay-pointer _ulong _XGC-pointer _XImage-pointer _int _int _int _int _uint _uint -> _int)
+(defx11* XQLength           : _XDisplay-pointer -> _int)
+
+;; All those queries should probably use _ptr o instead of _ptr i
+(defx11* XQueryBestCursor   : _XDisplay-pointer _ulong _uint _uint (_ptr i _uint) (_ptr i _uint) -> _int)
+(defx11* XQueryBestSize     : _XDisplay-pointer _int _ulong _uint _uint (_ptr i _uint) (_ptr i _uint) -> _int)
+(defx11* XQueryBestStipple  : _XDisplay-pointer _ulong _uint _uint (_ptr i _uint) (_ptr i _uint) -> _int)
+(defx11* XQueryBestTile     : _XDisplay-pointer _ulong _uint _uint (_ptr i _uint) (_ptr i _uint) -> _int)
+(defx11* XQueryColor        : _XDisplay-pointer _ulong _XColor-pointer -> _int)
+(defx11* XQueryColors       : _XDisplay-pointer _ulong _XColor-pointer _int -> _int)
+(defx11* XQueryExtension    : _XDisplay-pointer _string (_ptr i _int) (_ptr i _int) (_ptr i _int) -> _int)
+(defx11* XQueryKeymap       : _XDisplay-pointer _string -> _int)
 
 ;; ticket 187: http://planet.plt-scheme.org/trac/ticket/187
 ;; (defx11* XQueryPointer : _XDisplay-pointer _ulong (_ptr i _ulong) (_ptr i _ulong) (_ptr i _int) (_ptr i _int) (_ptr i _int) (_ptr i _int) (_ptr i _uint) -> _int)
@@ -2420,6 +2422,7 @@ int count;		/* defines range of change w. first_keycode*/
 
 (defx11* XQueryTextExtents : _XDisplay-pointer _ulong _string _int (_ptr i _int) (_ptr i _int) (_ptr i _int) _XCharStruct-pointer -> _int)
 (defx11* XQueryTextExtents16 : _XDisplay-pointer _ulong _XChar2b-pointer _int (_ptr i _int) (_ptr i _int) (_ptr i _int) _XCharStruct-pointer -> _int)
+
 (defx11* XRaiseWindow : _XDisplay-pointer Window -> _int)
 (defx11* XReadBitmapFile : _XDisplay-pointer _ulong _string (_ptr i _uint) (_ptr i _uint) (_ptr i _ulong) (_ptr i _int) (_ptr i _int) -> _int)
 (defx11* XReadBitmapFileData : _string (_ptr i _uint) (_ptr i _uint) _pointer (_ptr i _int) (_ptr i _int) -> _int)
@@ -2437,13 +2440,15 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XRotateWindowProperties : _XDisplay-pointer Window (_ptr i _ulong) _int _int -> _int)
 (defx11* XScreenCount : _XDisplay-pointer -> _int)
 (defx11* XSendEvent : _XDisplay-pointer Window _int _long _XEvent-pointer -> _int)
-(defx11* XSetAccessControl : _XDisplay-pointer _int -> _int)
-(defx11* XSetArcMode : _XDisplay-pointer _XGC-pointer _int -> _int)
-(defx11* XSetBackground : _XDisplay-pointer _XGC-pointer _ulong -> _int)
-(defx11* XSetWindowBorder : _XDisplay-pointer Window _ulong -> _int)
-(defx11* XSetWindowBorderPixmap : _XDisplay-pointer Window _ulong -> _int)
-(defx11* XSetWindowBorderWidth : _XDisplay-pointer Window _uint -> _int)
-(defx11* XSetWindowColormap : _XDisplay-pointer Window _ulong -> _int)
+
+(defx11* XSetAccessControl       : _XDisplay-pointer _int -> _int)
+(defx11* XSetArcMode             : _XDisplay-pointer _XGC-pointer _int -> _int)
+(defx11* XSetBackground          : _XDisplay-pointer _XGC-pointer _ulong -> _int)
+(defx11* XSetWindowBorder        : _XDisplay-pointer Window _ulong -> _int)
+(defx11* XSetWindowBorderPixmap  : _XDisplay-pointer Window _ulong -> _int)
+(defx11* XSetWindowBorderWidth   : _XDisplay-pointer Window _uint -> _int)
+(defx11* XSetWindowColormap      : _XDisplay-pointer Window _ulong -> _int)
+
 (defx11* XStoreBuffer : _XDisplay-pointer _string _int _int -> _int)
 (defx11* XStoreBytes : _XDisplay-pointer _string _int -> _int)
 (defx11* XStoreColor : _XDisplay-pointer _ulong _XColor-pointer -> _int)
@@ -2546,10 +2551,10 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* _Xmbtowc : (_ptr i _int) _string _int -> _int)
 (defx11* _Xwctomb : _string _int -> _int)
 
-(defx11* XGetIconSizes : _XDisplay-pointer _ulong _pointer (_ptr o _int) -> _int)
-(defx11* XSetZoomHints : _XDisplay-pointer _ulong _XSizeHints-pointer -> _int)
-(defx11* XShrinkRegion : _XRegion-pointer _int _int -> _int)
-(defx11* XGetNormalHints : _XDisplay-pointer _ulong _XSizeHints-pointer -> _int)
+(defx11* XGetIconSizes    : _XDisplay-pointer _ulong _pointer (_ptr o _int) -> _int)
+(defx11* XSetZoomHints    : _XDisplay-pointer _ulong _XSizeHints-pointer -> _int)
+(defx11* XShrinkRegion    : _XRegion-pointer _int _int -> _int)
+(defx11* XGetNormalHints  : _XDisplay-pointer _ulong _XSizeHints-pointer -> _int)
 
 (defx11* XGetPixel : _XImage-pointer _int _int -> _ulong)
 
