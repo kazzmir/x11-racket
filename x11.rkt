@@ -7,101 +7,110 @@
 #| TODO
 - most functions don't have the correct type
   They must use the defined types instead of _int, _uint, etc.
-
-- When functions return a status-fail?, print an error/warning (if debug is on?)
+- Many functions should return a Status and not an _int
 
 |#
 
-  (require ffi/unsafe
-           ffi/unsafe/cvector)
+(require ffi/unsafe
+         ffi/unsafe/cvector)
 
-  ;; (require mzlib/kw)
-  ;; (require (lib "list.ss"))
-  (require "fd.rkt" 
-           "utils.rkt"
-           ;"keysymtype.rkt"
-           )
+(require "fd.rkt" 
+         "utils.rkt"
+         ;"keysymtype.rkt"
+         )
 
-  (define libx11 (ffi-lib "libX11"))
+(define libx11 (ffi-lib "libX11"))
 
-  ;; Checks the environment for a DEBUG variable
-  ;; Usage example: X11_RACKET_DEBUG=1 racket test-x11.rkt
-  ;; But be warned that *compilation* must be done with this flag,
-  ;; and so it depends on various things (raco make, DrRacket, racket)
-  (define-for-syntax (debugging-enabled?)
-    ;; will return #f if DEBUG is not defined
-    (getenv "X11_RACKET_DEBUG"))
-  
-  (define (x11-dprintf str . args)
-    (printf (x11-debug-prefix))
-    (apply printf str args))
+;; Checks the environment for a DEBUG variable
+;; Usage example: X11_RACKET_DEBUG=1 racket test-x11.rkt
+;; But be warned that *compilation* must be done with this flag,
+;; and so it depends on various things (raco make, DrRacket, racket)
+(define-for-syntax (debugging-enabled?)
+  ;; will return #f if DEBUG is not defined
+  (getenv "X11_RACKET_DEBUG"))
 
-  ;; give it two expressions, it will select the correct one depending
-  ;; on whether debugging is currently enabled
-  (define-syntax (if-debug stx)
-    (syntax-case stx ()
-      [(_ debugged non-debugged)
-       (if (debugging-enabled?)
+(define (x11-dprintf str . args)
+  (display (x11-debug-prefix))
+  (apply printf str args))
+
+;; give it two expressions, it will select the correct one depending
+;; on whether debugging is currently enabled
+(define-syntax (if-debug stx)
+  (syntax-case stx ()
+    [(_ debugged non-debugged)
+     (if (debugging-enabled?)
          #'debugged
          #'non-debugged)]))
 
-  (define-syntax defx11
-    (syntax-rules (:)
-      [(_ id : x ...)
-       (begin
-         (define func
-           (get-ffi-obj (regexp-replaces (symbol->string 'id) '((#rx"-" "_")))
-                        libx11 (_fun x ...)))
-         ;; use debug to select between the two things so we don't always
-         ;; pay the cost of an extra lambda on top of the ffi function
-         (if-debug (define (id . v)
-                     (x11-dprintf "~a: ~a" 'id v)
-                     (flush-output)
-                     (let ([res (apply func v)])
-                       (printf " -> ~a\n" res)
-                       res))
-                   (define id func)))]))
+(define-syntax defx11
+  (syntax-rules (:)
+    [(_ id : x ...)
+     (begin
+       (define func
+         (get-ffi-obj (regexp-replaces (symbol->string 'id) '((#rx"-" "_")))
+                      libx11 (_fun x ...)))
+       ;; use debug to select between the two things so we don't always
+       ;; pay the cost of an extra lambda on top of the ffi function
+       (if-debug (define (id . v)
+                   (x11-dprintf "~a: ~a" 'id v)
+                   (flush-output)
+                   (let ([res (apply func v)])
+                     (printf " -> ~a\n" res)
+                     res))
+                 (define id func)))]))
 
-  ;; just provide the above
-  (define-syntax defx11*
-    (syntax-rules (:)
-      [(_ id : x ...)
-       (begin
-         (defx11 id : x ...)
-         (provide id))]
-      [(_ (id x ...) expr ...)
-       (begin
-         (provide id)
-         (define id (lambda (x ...)
-                      expr ...)))]))
-  
-  ;; Parameter to control how debug messages are printed
-  ;; (useful for grepping)
-  (define* x11-debug-prefix (make-parameter ""))
+;; just provide the above
+(define-syntax defx11*
+  (syntax-rules (:)
+    [(_ id : x ...)
+     (begin
+       (defx11 id : x ...)
+       (provide id))]
+    [(_ (id x ...) expr ...)
+     (begin
+       (provide id)
+       (define id (lambda (x ...)
+                    expr ...)))]))
 
-  ;; We should make a guarded/wrapped ctype
-  ;; to check for failures.
-  (define* Status
-    (make-ctype _int 
-                (λ(status)(or status 0))
-                (λ(status)
-                  (if-debug 
-                   (when (= 0 status) 
-                     (x11-dprintf "Warning: status not 0.\n"))
-                   #f)
-                  (if (= 0 status) #f status))))
-                
-  #;(define* Status _int)
-  #;(define* (status-fail? status) make-ctype
-    (= 0 status))
-  #;(define* (status-ok? status)
-    (not (status-fail? status)))
-  
-  ;; we could make a transformer for that, if we want to keep a variable-like object.
-  (define* (get-Xdebug)
-    (get-ffi-obj '_Xdebug libx11 _bool))
-  (define* (set-Xdebug! b)
-    (set-ffi-obj! '_Xdebug libx11 _bool b))
+;; Parameter to control how debug messages are printed
+;; (useful for grepping)
+(define* x11-debug-prefix (make-parameter ""))
+
+;; Some string may not convert correcty,
+;; So ensure conversion but output a default symbol for unknown characters.
+;; from ffi/unsafe, line 711.
+(define ((false-or-op op) x) (and x (op x)))
+(define ((any-string-op op) x)
+  (cond [(not    x) x]
+        [(bytes? x) x]
+        [(path?  x) (path->bytes x)]
+        [else (op x)]))
+(define* _string*-safe/utf-8
+  (make-ctype _bytes
+    (any-string-op string->bytes/utf-8) ; no safe-conversion needed?
+    (false-or-op (λ(v)(bytes->string/utf-8 v #\?)))))
+
+; Change the default _string type to this one
+(default-_string-type _string*-safe/utf-8)
+
+
+;; We should make a guarded/wrapped ctype
+;; to check for failures.
+(define* Status
+  (make-ctype _int 
+              (λ(status)(or status 0))
+              (λ(status)
+                (if-debug 
+                 (when (= 0 status) 
+                   (x11-dprintf "Warning: status not 0.\n"))
+                 #f)
+                (if (= 0 status) #f status))))
+
+;; we could make a transformer for that, if we want to keep a variable-like object.
+(define* (get-Xdebug)
+  (get-ffi-obj '_Xdebug libx11 _bool))
+(define* (set-Xdebug! b)
+  (set-ffi-obj! '_Xdebug libx11 _bool b))
   
   (define* Pixel _ulong)
   (define* XID _ulong)
@@ -401,8 +410,7 @@
                 OwnerGrabButtonMask =      #x01000000)
 	      _long))
 
-
-  #|
+    #|
   typedef struct {
 	XExtData *ext_data;	/* hook for extension to hang data */
 	struct _XDisplay *display;/* back pointer to display structure */
