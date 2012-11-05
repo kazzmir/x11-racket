@@ -81,10 +81,20 @@
 
   ;; We should make a guarded/wrapped ctype
   ;; to check for failures.
-  (define* Status _int)
-  (define* (status-fail? status)
+  (define* Status
+    (make-ctype _int 
+                (λ(status)(or status 0))
+                (λ(status)
+                  (if-debug 
+                   (when (= 0 status) 
+                     (x11-dprintf "Warning: status not 0.\n"))
+                   #f)
+                  (if (= 0 status) #f status))))
+                
+  #;(define* Status _int)
+  #;(define* (status-fail? status) make-ctype
     (= 0 status))
-  (define* (status-ok? status)
+  #;(define* (status-ok? status)
     (not (status-fail? status)))
   
   ;; we could make a transformer for that, if we want to keep a variable-like object.
