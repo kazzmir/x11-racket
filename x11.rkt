@@ -54,9 +54,12 @@
        (if-debug (define (id . v)
                    (x11-dprintf "~a: ~a" 'id v)
                    (flush-output)
-                   (let ([res (apply func v)])
+                   (let (#;[res (apply func v)]
+                         [res (call-with-values (λ()(apply func v)) list)])
                      (printf " -> ~a\n" res)
-                     res))
+                     ;res
+                     (apply values res)
+                     ))
                  (define id func)))]))
 
 ;; just provide the above
