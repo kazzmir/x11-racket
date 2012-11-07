@@ -12,7 +12,9 @@
 |#
 
 (require ffi/unsafe
-         ffi/unsafe/cvector)
+         ffi/unsafe/cvector
+         (only-in '#%foreign ctype-c->scheme ctype-scheme->c)
+         )
 
 (require "fd.rkt" 
          "utils.rkt"
@@ -142,6 +144,7 @@
              RectangleIn = 1
              RectanglePart = 2)))
 
+  ;@@ AtomProperty
   (define AtomProperty
    (_enum '(XA_PRIMARY = 1
 	    XA_SECONDARY = 2
@@ -213,6 +216,10 @@
 	    XA_WM_TRANSIENT_FOR = 68
 	    XA_LAST_PREDEFINED = 68)))
 
+  
+(define (atom-symbol->_ulong atom)
+  ((ctype-scheme->c AtomProperty) atom))
+  
   (define XK-Pointer
     (_enum '(Any = 0
 	     Left = #xfee0
@@ -2310,7 +2317,7 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XChangeKeyboardControl : _XDisplay-pointer _ulong _XKeyboardControl-pointer -> _int)
 (defx11* XChangeKeyboardMapping : _XDisplay-pointer _int _int (_ptr i _ulong) _int -> _int)
 (defx11* XChangePointerControl : _XDisplay-pointer _int _int _int _int _int -> _int)
-(defx11* XChangeProperty : _XDisplay-pointer _ulong _ulong _ulong _int _int _pointer _int -> _int)
+(defx11* XChangeProperty : _XDisplay-pointer _ulong _ulong _ulong _int _int (_ptr i _ubyte) _int -> _int)
 (defx11* XChangeSaveSet : _XDisplay-pointer _ulong _int -> _int)
 (defx11* XChangeWindowAttributes : _XDisplay-pointer Window ChangeWindowAttributes _XSetWindowAttributes-pointer -> _int)
 
@@ -2373,7 +2380,7 @@ int count;		/* defines range of change w. first_keycode*/
 ; apparently the button number is not an XK-Pointer...
 (defx11* XGrabButton : _XDisplay-pointer _uint Modifiers Window _bool InputMask GrabMode GrabMode Window Cursor -> _void)
 ;(defx11* XGrabKey : _XDisplay-pointer _int _uint _ulong _int _int _int -> _int)
-(defx11* XGrabKey : _XDisplay-pointer _int Modifiers Window _bool GrabMode GrabMode -> _int)
+(defx11* XGrabKey : _XDisplay-pointer KeyCode Modifiers Window _bool GrabMode GrabMode -> _void)
 ; can generate BadAccess , BadValue , and BadWindow errors. 
 (defx11* XGrabKeyboard : _XDisplay-pointer _ulong _int _int _int _ulong -> _int)
 ;@@ XGrabPointer
@@ -2594,8 +2601,12 @@ int count;		/* defines range of change w. first_keycode*/
 
 ;(defx11* XGetTextProperty : _XDisplay-pointer _ulong _XTextProperty-pointer _ulong -> Status)
 ; the _ulong cannot be an AtomProperty, because it would be too restrictive: some atoms are "interned" dynamically.
-(defx11* XGetTextProperty : _XDisplay-pointer Window (txt : (_ptr o _XTextProperty)) _ulong -> (status : Status)
+(defx11 XGetTextProperty : _XDisplay-pointer Window (txt : (_ptr o _XTextProperty)) _ulong -> (status : Status)
   -> (and status txt))
+
+(define (XGetTextProperty2 display atom)
+  (XGetTextProperty display (if (symbol? atom) (atom-symbol->_ulong atom) atom)))
+(provide (rename-out [XGetTextProperty2 XGetTextProperty]))
 
 (defx11* XGetVisualInfo : _XDisplay-pointer _long _XVisualInfo-pointer (_ptr i _int) -> _XVisualInfo-pointer)
 
