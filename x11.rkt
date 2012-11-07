@@ -2307,7 +2307,7 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XChangeKeyboardControl : _XDisplay-pointer _ulong _XKeyboardControl-pointer -> _int)
 (defx11* XChangeKeyboardMapping : _XDisplay-pointer _int _int (_ptr i _ulong) _int -> _int)
 (defx11* XChangePointerControl : _XDisplay-pointer _int _int _int _int _int -> _int)
-(defx11* XChangeProperty : _XDisplay-pointer _ulong _ulong _ulong _int _int (_ptr i _ubyte) _int -> _int)
+(defx11* XChangeProperty : _XDisplay-pointer _ulong _ulong _ulong _int _int _pointer _int -> _int)
 (defx11* XChangeSaveSet : _XDisplay-pointer _ulong _int -> _int)
 (defx11* XChangeWindowAttributes : _XDisplay-pointer Window ChangeWindowAttributes _XSetWindowAttributes-pointer -> _int)
 
@@ -2370,7 +2370,7 @@ int count;		/* defines range of change w. first_keycode*/
 ; apparently the button number is not an XK-Pointer...
 (defx11* XGrabButton : _XDisplay-pointer _uint Modifiers Window _bool InputMask GrabMode GrabMode Window Cursor -> _void)
 ;(defx11* XGrabKey : _XDisplay-pointer _int _uint _ulong _int _int _int -> _int)
-(defx11* XGrabKey : _XDisplay-pointer KeyCode Modifiers Window _bool GrabMode GrabMode -> _void)
+(defx11* XGrabKey : _XDisplay-pointer _int Modifiers Window _bool GrabMode GrabMode -> _int)
 ; can generate BadAccess , BadValue , and BadWindow errors. 
 (defx11* XGrabKeyboard : _XDisplay-pointer _ulong _int _int _int _ulong -> _int)
 ;@@ XGrabPointer
