@@ -54,10 +54,8 @@
        (if-debug (define (id . v)
                    (x11-dprintf "~a: ~a" 'id v)
                    (flush-output)
-                   (let (#;[res (apply func v)]
-                         [res (call-with-values (λ()(apply func v)) list)])
+                   (let ([res (call-with-values (λ()(apply func v)) list)])
                      (printf " -> ~a\n" res)
-                     ;res
                      (apply values res)
                      ))
                  (define id func)))]))
@@ -104,8 +102,8 @@
               (λ(status)(or status 0))
               (λ(status)
                 (if-debug 
-                 (when (= 0 status) 
-                   (x11-dprintf "Warning: status not 0.\n"))
+                 (when (= 0 status)
+                   (x11-dprintf "Warning: status is 0.\n"))
                  #f)
                 (if (= 0 status) #f status))))
 
@@ -1685,7 +1683,7 @@ int count;		/* defines range of change w. first_keycode*/
 
   (defx11* XGetWindowProperty :
    _XDisplay-pointer Window
-   Atom _long _long _bool AtomProperty
+   Atom _long _long _bool AtomProperty; Atom
    (_ptr o Atom)
    (_ptr o _int)
    (_ptr o _ulong)
@@ -1693,6 +1691,8 @@ int count;		/* defines range of change w. first_keycode*/
    (ret : (_ptr o _pointer))
    -> _bool
    -> ret)
+  
+  ;; TODO: Make a version that works for Atom that are not AtomProperty
 
   ;; Return &(display->screens[screen])
   (define (screen-of-display display screen)
@@ -1753,7 +1753,7 @@ int count;		/* defines range of change w. first_keycode*/
   (defx11* XCopyArea : _XDisplay-pointer Drawable Drawable _XGC-pointer
 	   _int _int _uint _uint _int _int -> _int)
 
-  (defx11* XPending : _XDisplay-pointer -> _bool)
+  (defx11* XPending : _XDisplay-pointer -> _int)
 
   ;@@ XNextEvent
   (defx11* XNextEvent : _XDisplay-pointer _XEvent-pointer -> _int)
@@ -1769,7 +1769,10 @@ int count;		/* defines range of change w. first_keycode*/
       ; I can't find where it comes from...
       ; (same with XPeekEvent)
       ;(printf "e: ~a\n" e) ; is it null ? ; No crash when I print e?!
+      
+      ;(XIfEvent display e (thunk* #t) #f) ; TEST
       (XNextEvent display e)
+      
       ;(printf "Ok.\n")(flush-output)
       ;(printf "Pushing XAnyEvent tag... ")(flush-output)
       (cpointer-push-tag! e XAnyEvent-tag)
@@ -2589,30 +2592,35 @@ int count;		/* defines range of change w. first_keycode*/
 
 (defx11* XGetStandardColormap : _XDisplay-pointer _ulong _XStandardColormap-pointer _ulong -> _int)
 
-(defx11* XGetTextProperty : _XDisplay-pointer _ulong _XTextProperty-pointer _ulong -> _int)
+;(defx11* XGetTextProperty : _XDisplay-pointer _ulong _XTextProperty-pointer _ulong -> Status)
+; the _ulong cannot be an AtomProperty, because it would be too restrictive: some atoms are "interned" dynamically.
+(defx11* XGetTextProperty : _XDisplay-pointer Window (txt : (_ptr o _XTextProperty)) _ulong -> (status : Status)
+  -> (and status txt))
+
 (defx11* XGetVisualInfo : _XDisplay-pointer _long _XVisualInfo-pointer (_ptr i _int) -> _XVisualInfo-pointer)
 
-(defx11* XGetWMClientMachine : _XDisplay-pointer _ulong _XTextProperty-pointer -> _int) 
+(defx11* XGetWMClientMachine : _XDisplay-pointer Window _XTextProperty-pointer -> Status) 
+
 ;@@ XTextPropertyToStringList
 (defx11* XTextPropertyToStringList : 
   _XTextProperty-pointer (lstr : (_ptr o _pointer)) (count : (_ptr o _int))
-  -> _int
-  -> (let ([out (cblock->list lstr _string count)])
-       (register-finalizer out (lambda (c) (XFreeStringList c)))
-       out))
+  -> (status : Status)
+  -> (and status
+          (let ([out (cblock->list lstr _string count)])
+            (register-finalizer out (lambda (c) (XFreeStringList c)))
+            out)))
 ; Status XTextPropertyToStringList(text_prop, list_return, count_return)
 ;       XTextProperty *text_prop;
 ;       char ***list_return;
 ;       int *count_return;
-
 
 (defx11* XAddPixel               : _XImage-pointer _long -> _int)
 (defx11* XGetWMHints             : _XDisplay-pointer Window -> _XWMHints-pointer)
 (defx11* XGetWMIconName          : _XDisplay-pointer Window _XTextProperty-pointer -> _int)
 (defx11* XAllocClassHint         : -> _XClassHint-pointer)
 ;(defx11* XGetWMName              : _XDisplay-pointer Window _XTextProperty-pointer -> _int) ; -> _bool ? or even #f or a XTexProperty data?
-(defx11* XGetWMName              : _XDisplay-pointer Window (prop : (_ptr o _XTextProperty)) -> (status : _int) 
-  -> (and (> status 0) prop))
+(defx11* XGetWMName              : _XDisplay-pointer Window (prop : (_ptr o _XTextProperty)) -> (status : Status) 
+  -> (and status prop))
 (defx11* XGetWMNormalHints       : _XDisplay-pointer Window _XSizeHints-pointer (_ptr i _long) -> _int)
 (defx11* XGetWMSizeHints         : _XDisplay-pointer Window _XSizeHints-pointer (_ptr i _long) _ulong -> _int)
 (defx11* XAllocIconSize          : -> _XIconSize-pointer)
