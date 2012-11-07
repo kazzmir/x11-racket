@@ -2604,8 +2604,8 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11 XGetTextProperty : _XDisplay-pointer Window (txt : (_ptr o _XTextProperty)) _ulong -> (status : Status)
   -> (and status txt))
 
-(define (XGetTextProperty2 display atom)
-  (XGetTextProperty display (if (symbol? atom) (atom-symbol->_ulong atom) atom)))
+(define (XGetTextProperty2 display window atom)
+  (XGetTextProperty display window (if (symbol? atom) (atom-symbol->_ulong atom) atom)))
 (provide (rename-out [XGetTextProperty2 XGetTextProperty]))
 
 (defx11* XGetVisualInfo : _XDisplay-pointer _long _XVisualInfo-pointer (_ptr i _int) -> _XVisualInfo-pointer)
