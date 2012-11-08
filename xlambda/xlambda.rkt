@@ -1,17 +1,14 @@
-#lang racket
+#lang racket/base
 
-(require (lib "trace.ss")
-         ; (require (lib "errortrace.ss" "errortrace"))
-         "../x11.rkt"
+(require "../x11.rkt"
          "../x11-xpm.rkt"
-         (lib "foreign.ss"))
-(unsafe!)
-(require scheme/mpair
-         ;; (require #%foreign)
-         (lib "list.ss")
+         "../fd.rkt"
          "../keysymdef.rkt"
+         ffi/unsafe
+         racket/list
          racket/math
          racket/class
+         racket/match
          "screenstack.rkt"
          "rect.rkt")
 
@@ -51,10 +48,9 @@
                                      StructureNotifyMask
                                      ButtonPressMask))
 
-  (XGrabKey display (XKeysymToKeycode display XK-Tab) 'ControlMask rootWindow #t 'GrabModeAsync 'GrabModeAsync)
-  (XGrabKey display (XKeysymToKeycode display XK-space) 'ControlMask rootWindow #t 'GrabModeAsync 'GrabModeAsync)
-  (XGrabKey display (XKeysymToKeycode display XK-j) 'ControlMask rootWindow #t 'GrabModeAsync 'GrabModeAsync)
-  (XGrabKey display (XKeysymToKeycode display XK-k) 'ControlMask rootWindow #t 'GrabModeAsync 'GrabModeAsync)
+  (for ([k (list XK-Tab XK-space XK-h XK-j XK-k XK-l XK-H XK-J XK-K XK-L XK-c 
+                 XK-F1 XK-F2 XK-F3 XK-F4 XK-F5 XK-F6 XK-F7 XK-F8 XK-F9 XK-F10 XK-F11 XK-F12 )])
+    (XGrabKey display (XKeysymToKeycode display k) 'ControlMask rootWindow #t 'GrabModeAsync 'GrabModeAsync))
 
   (define atom_WM_STATE (XInternAtom display "WM_STATE" #f))
 
@@ -76,7 +72,7 @@
     (define iconicState    3)
     (setWMState w iconicState))
 
-  (define ss (new screen-stack%))
+  (define we (new work-environment%))
 
   (define (size-show-window win r)
     (match-define (rect x y w h) r)
@@ -88,34 +84,42 @@
    
   (define ops% 
     (class object%
-      (define/public (fullscreen w) 
-                     (size-show-window w root-rect))
+      (define/public (fullscreen w) (size-show-window w root-rect))
       (define/public (size w r) (size-show-window w r))
       (define/public (hide w) (XUnmapWindow display w))
+      (define/public (hide-all l) (for ([x l]) (hide x)))
       (super-new)))
+
 
   (define ops (new ops%))
   (define layouter (new xmonad-layout%))
+
+  (define (relayout)
+    (send layouter layout (send we get-ws) ops root-rect))
 
   (define (handle-x11-event event)
     (case (XEvent-type event)
       ((KeyPress)
        ;CTRL
        (when (equal? '(ControlMask) (XKeyEvent-state event))
-         (case (XKeyEvent-keycode event)
+         (define XKKEY (XKeycodeToKeysym display (XKeyEvent-keycode event) 0))
+         (printf "KEY ~a ~a ~a\n" (XKeyEvent-keycode event) XKKEY XK-space)
+         (case XKKEY
+           ;F1 - F12
+           [(65470 65471 65472 65473 65474 65475 65476 65477 65478 65479 65480 65481) (send we switch (- XKKEY 65470) ops)]
            ;space
-           [(65) (send layouter rotate-layout)]
+           [(32) (send layouter rotate-layout)]
            ;j
-           [(44) (send ss rotate-left)]
+           [(106) (send we rotate-left)]
            ;k
-           [(45) (send ss rotate-right)]
+           [(107) (send we rotate-right)]
            [else
             (printf "Key-Event ~a ~a\n" (XKeyEvent-state event) (XKeyEvent-keycode event))])
-         (send layouter layout (send ss get-ws) ops root-rect)
+         (relayout)
        ))
       ((MapRequest)
-       (send ss push-win (XMapRequestEvent-window event))
-       (send layouter layout (send ss get-ws) ops root-rect)
+       (send we push-win (XMapRequestEvent-window event))
+       (relayout)
        )
       ((ConfigureNotify)
        (begin
@@ -129,8 +133,8 @@
                  (XConfigureEvent-width event)
                  (XConfigureEvent-height event))))
       ((DestroyNotify)
-       (send ss remove-win (XDestroyWindowEvent-window event))
-       (send layouter layout (send ss get-ws) ops root-rect)
+       (send we remove-win (XDestroyWindowEvent-window event))
+       (relayout)
        )
       ((EnterNotify) (void))
       ((LeaveNotify) (void))
@@ -138,12 +142,7 @@
         (begin
           (printf "Event type: ~a\n" (XEvent-type event))))))
 
-  (define scheme-make-fd-input-port
-    (let ([fun (get-ffi-obj "scheme_make_fd_input_port" #f (_fun _int _racket _int _int -> _racket))])
-      (lambda (fd name)
-        (fun fd name 0 0))))
-
-  (define x11-port (scheme-make-fd-input-port (XConnectionNumber display) 'x11-connection))
+  (define x11-port (open-fd-input-port (XConnectionNumber display) #;'x11-connection))
 
   (let loop ()
     (sync
@@ -153,7 +152,10 @@
                       (when (XPending display)
                         (handle-x11-event (XNextEvent* display))
                         (loop2)))
-                  )))
+                  ))
+      (handle-evt (current-input-port)
+                  (lambda (e)
+                    (printf "INPUT ~a ~a\n" e (read-line e)))))
     (loop))
 )
 

@@ -4,7 +4,8 @@
          racket/match
          "rect.rkt")
 
-(provide screen-stack%
+(provide work-environment%
+         screen-stack%
          xmonad-layout%)
 
 (define (in-rect-split-horz r c)
@@ -20,6 +21,27 @@
   (for/list ([i c])
     (rect x (+ y (* i q) (if (< i rem) i 0))
           w (+ q (if (< i rem) 1 0)))))
+
+(define work-environment%
+  (class object%
+    (field [current-ss (new screen-stack%)]
+           [sss (hash 0 current-ss)])
+    (define/public (push-win w) (send current-ss push-win w))
+    (define/public (remove-win w) (for ([css (in-hash-values sss)])
+                                       (send current-ss remove-win w)))
+    (define/public (rotate-left) (send current-ss rotate-left))
+    (define/public (rotate-right) (send current-ss rotate-right))
+    (define/public (get-ws) (send current-ss get-ws))
+    (define/public (switch ss-id ops)
+      (define new-ss (hash-ref sss ss-id (lambda ()
+                                           (define new-ss (new screen-stack%))
+                                           (set! sss (hash-set sss ss-id new-ss))
+                                           new-ss)))
+      (when (not (eq? current-ss new-ss))
+        (send ops hide-all (send current-ss get-ws))
+        (set! current-ss new-ss)))
+
+    (super-new)))
 
 (define screen-stack% 
   (class object%
