@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
   ;; good resources
   ;; http://tronche.com/gui/x/xlib/function-index.html
@@ -11,12 +11,11 @@
 
 |#
 
-(require ffi/unsafe
+(require (for-syntax racket/base)
+         ffi/unsafe
          ffi/unsafe/cvector
          (only-in '#%foreign ctype-c->scheme ctype-scheme->c)
-         )
-
-(require "fd.rkt" 
+         "fd.rkt" 
          "utils.rkt"
          ;"keysymtype.rkt"
          )

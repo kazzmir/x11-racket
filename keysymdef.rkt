@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 (provide keysym-number->symbol)
 ; all XK-... keys are also provided as (const) variables
