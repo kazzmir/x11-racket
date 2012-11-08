@@ -118,7 +118,6 @@
   (define* Pixel _ulong)
   (define* XID _ulong)
   (define* Time _ulong)
-  (define* Atom _ulong)
   (define* VisualID _ulong)
   (define* KeyCode _ubyte)
   (define* XContext _int)
@@ -215,11 +214,16 @@
 	    XA_WM_CLASS = 67
 	    XA_WM_TRANSIENT_FOR = 68
 	    XA_LAST_PREDEFINED = 68)))
+  
+(define* Atom 
+  (make-ctype _ulong
+              (λ(s-v)(if (symbol? s-v)
+                       ((ctype-scheme->c AtomProperty) s-v)
+                       s-v))
+              #f ; currently atomProperties are not turned back into symbols, but I don't think that is needed anyway (is it?)
+              ))
 
-  
-(define (atom-symbol->_ulong atom)
-  ((ctype-scheme->c AtomProperty) atom))
-  
+
   (define XK-Pointer
     (_enum '(Any = 0
 	     Left = #xfee0
@@ -1690,7 +1694,7 @@ int count;		/* defines range of change w. first_keycode*/
 
   (defx11* XGetWindowProperty :
    _XDisplay-pointer Window
-   Atom _long _long _bool AtomProperty; Atom
+   Atom _long _long _bool Atom
    (_ptr o Atom)
    (_ptr o _int)
    (_ptr o _ulong)
@@ -1698,8 +1702,6 @@ int count;		/* defines range of change w. first_keycode*/
    (ret : (_ptr o _pointer))
    -> _bool
    -> ret)
-  
-  ;; TODO: Make a version that works for Atom that are not AtomProperty
 
   ;; Return &(display->screens[screen])
   (define (screen-of-display display screen)
@@ -2595,18 +2597,12 @@ int count;		/* defines range of change w. first_keycode*/
 
 (defx11* XSubImage : _XImage-pointer _int _int _uint _uint -> _XImage-pointer)
 
-(defx11* XGetSizeHints : _XDisplay-pointer _ulong _XSizeHints-pointer _ulong -> _int)
+(defx11* XGetSizeHints : _XDisplay-pointer Window _XSizeHints-pointer Atom -> _int)
 
-(defx11* XGetStandardColormap : _XDisplay-pointer _ulong _XStandardColormap-pointer _ulong -> _int)
+(defx11* XGetStandardColormap : _XDisplay-pointer _ulong _XStandardColormap-pointer Atom -> _int)
 
-;(defx11* XGetTextProperty : _XDisplay-pointer _ulong _XTextProperty-pointer _ulong -> Status)
-; the _ulong cannot be an AtomProperty, because it would be too restrictive: some atoms are "interned" dynamically.
-(defx11 XGetTextProperty : _XDisplay-pointer Window (txt : (_ptr o _XTextProperty)) _ulong -> (status : Status)
+(defx11* XGetTextProperty : _XDisplay-pointer Window (txt : (_ptr o _XTextProperty)) Atom -> (status : Status)
   -> (and status txt))
-
-(define (XGetTextProperty2 display window atom)
-  (XGetTextProperty display window (if (symbol? atom) (atom-symbol->_ulong atom) atom)))
-(provide (rename-out [XGetTextProperty2 XGetTextProperty]))
 
 (defx11* XGetVisualInfo : _XDisplay-pointer _long _XVisualInfo-pointer (_ptr i _int) -> _XVisualInfo-pointer)
 
