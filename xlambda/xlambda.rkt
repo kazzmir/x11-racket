@@ -103,7 +103,6 @@
        ;CTRL
        (when (equal? '(ControlMask) (XKeyEvent-state event))
          (define XKKEY (XKeycodeToKeysym display (XKeyEvent-keycode event) 0))
-         (printf "KEY ~a ~a ~a\n" (XKeyEvent-keycode event) XKKEY XK-space)
          (case XKKEY
            ;F1 - F12
            [(65470 65471 65472 65473 65474 65475 65476 65477 65478 65479 65480 65481) (send we switch (- XKKEY 65470) ops)]
@@ -114,11 +113,15 @@
            ;k
            [(107) (send we rotate-right)]
            [else
-            (printf "Key-Event ~a ~a\n" (XKeyEvent-state event) (XKeyEvent-keycode event))])
+            (printf "Key-Event ~a ~a ~a\n" (XKeyEvent-state event) (XKeyEvent-keycode event) XKKEY)])
          (relayout)
        ))
       ((MapRequest)
        (send we push-win (XMapRequestEvent-window event))
+       (relayout)
+       )
+      ((DestroyNotify)
+       (send we remove-win (XDestroyWindowEvent-window event))
        (relayout)
        )
       ((ConfigureNotify)
@@ -132,10 +135,10 @@
                  (XConfigureEvent-y event)
                  (XConfigureEvent-width event)
                  (XConfigureEvent-height event))))
-      ((DestroyNotify)
-       (send we remove-win (XDestroyWindowEvent-window event))
-       (relayout)
-       )
+      ((KeyRelease) (void))
+      ((MapNotify) (void))
+      ((CreateNotify) (void))
+      ((UnmapNotify) (void))
       ((EnterNotify) (void))
       ((LeaveNotify) (void))
       (else
@@ -145,11 +148,11 @@
   (define x11-port (open-fd-input-port (XConnectionNumber display) #;'x11-connection))
 
   (let loop ()
-    (sync
+    (sync/enable-break
       (handle-evt x11-port 
                   (lambda (e)
                     (let loop2 ()
-                      (when (XPending display)
+                      (when (not (zero? (XPending display)))
                         (handle-x11-event (XNextEvent* display))
                         (loop2)))
                   ))
