@@ -20,7 +20,7 @@
          ;"keysymtype.rkt"
          )
 
-(define libx11 (ffi-lib "libX11"))
+(define libx11 (ffi-lib "libX11" '("6")))
 
 ;; Checks the environment for a DEBUG variable
 ;; Usage example: X11_RACKET_DEBUG=1 racket test-x11.rkt
