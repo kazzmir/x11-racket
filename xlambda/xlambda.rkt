@@ -149,16 +149,16 @@
 
   (let loop ()
     (sync/enable-break
-      (handle-evt x11-port 
-                  (lambda (e)
-                    (let loop2 ()
-                      (when (not (zero? (XPending display)))
-                        (handle-x11-event (XNextEvent* display))
-                        (loop2)))
-                  ))
-      (handle-evt (current-input-port)
-                  (lambda (e)
-                    (printf "INPUT ~a ~a\n" e (read-line e)))))
+     (handle-evt x11-port 
+                 (lambda (e)
+                   (let loop2 ()
+                     (unless (zero? (XPending display))
+                       (handle-x11-event (XNextEvent* display))
+                       (loop2)))
+                   ))
+     (handle-evt (current-input-port)
+                 (lambda (e)
+                   (printf "INPUT ~a ~a\n" e (read-line e)))))
     (loop))
 )
 
