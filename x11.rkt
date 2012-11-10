@@ -1936,8 +1936,9 @@ int count;		/* defines range of change w. first_keycode*/
 
   (defx11* XGetWindowAttributes :
 	   _XDisplay-pointer Window
-       (attributes : (_ptr o _XWindowAttributes))
-	   -> Status -> attributes)
+    (attributes : (_ptr o _XWindowAttributes))
+    -> (status : Status)
+    -> (and status attributes))
 
   ;(defx11* XOpenDisplay : _string -> _XDisplay-pointer)
   (defx11* XOpenDisplay : _string -> _XDisplay-pointer/null) ; Laurent Orseau -- 2012-10-27
