@@ -1791,7 +1791,7 @@ int count;		/* defines range of change w. first_keycode*/
   (defx11* XCopyArea : _XDisplay-pointer Drawable Drawable _XGC-pointer
 	   _int _int _uint _uint _int _int -> _int)
 
-  (defx11* XPending : _XDisplay-pointer -> _bool)
+  (defx11* XPending : _XDisplay-pointer -> _int)
 
   ;@@ XNextEvent
   (defx11* XNextEvent : _XDisplay-pointer _XEvent-pointer -> _int)

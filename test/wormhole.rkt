@@ -172,7 +172,7 @@
 
     ;; handles all events
     (define (handle-events)
-      (when (XPending display)
+      (unless (zero? (XPending display))
         #;
         (printf "Event\n")
         (define event (XNextEvent* display))

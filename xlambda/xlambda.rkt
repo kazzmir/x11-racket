@@ -152,7 +152,7 @@
       (handle-evt x11-port 
                   (lambda (e)
                     (let loop2 ()
-                      (when (XPending display)
+                      (unless (zero? (XPending display))
                         (handle-x11-event (XNextEvent* display))
                         (loop2)))
                   ))
