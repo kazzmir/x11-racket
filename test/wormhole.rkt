@@ -50,6 +50,9 @@
                                   (create-starline out)))
   out)
 
+(define (draw-wormhole wormhole work display)
+  #f)
+
 (define-syntax-parameter quit (lambda (stx) (raise-syntax-error 'quit "syntax parameter")))
 (define-syntax-rule (block code ...)
   (let/ec break
@@ -110,9 +113,14 @@
     (define wormhole (create-wormhole display window))
 
     (define (draw work screen)
+      (printf "draw\n")
+      (define attributes (XGetWindowAttributes display window))
+      (define width (XWindowAttributes-width attributes))
+      (define height (XWindowAttributes-height attributes))
       (XSetForeground display graphics-context white)
-      (XFillRectangle display work graphics-context 0 0 640 480)
-      (XCopyArea display work screen graphics-context 0 0 640 480 0 0))
+      (XFillRectangle display work graphics-context 0 0 width height)
+      (draw-wormhole wormhole work screen)
+      (XCopyArea display work screen graphics-context 0 0 width height 0 0))
 
     (define (logic)
       (handle-events)
