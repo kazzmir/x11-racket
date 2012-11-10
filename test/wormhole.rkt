@@ -37,9 +37,9 @@
 
 (define (create-starline wormhole)
   (define angle (random-angle))
-  (define z (wormhole-max-z wormhole))
+  (define z (random (wormhole-max-z wormhole)))
   (starline (create-star z angle wormhole)
-            (create-star (+ z (random 6) 4) angle wormhole)))
+            (create-star (- z (random 6) 4) angle wormhole)))
 
 (define (create-color-changer display)
   0)
@@ -59,13 +59,13 @@
               (angle-to x y want-x want-y) 
               (angle-to x y want-x want-y)
               want-x want-y
-              600
+              700
               20
               0
               (create-color-changer display)
               (list)))
-  (set-wormhole-stars! out (for/list ([star 64])
-                                  (create-starline out)))
+  (set-wormhole-stars! out (for/list ([star 400])
+                             (create-starline out)))
   out)
 
 ;; R3 -> R2
@@ -102,16 +102,34 @@
     (draw-starline star work display gc white)))
 
 (define (move-star star)
-  (define z-speed 5)
+  (define z-speed 10)
   (set-star-z! star (- (star-z star) z-speed)))
 
-(define (move-starline starline)
+(define (update-star original update)
+  (set-star-x! original (star-x update))
+  (set-star-y! original (star-y update))
+  (set-star-z! original (star-z update))
+  (set-star-center-x! original (star-center-x update))
+  (set-star-center-y! original (star-center-y update)))
+
+(define (move-starline starline wormhole)
   (move-star (starline-start starline))
-  (move-star (starline-end starline)))
+  (move-star (starline-end starline))
+  (when (<= (star-z (starline-end starline)) 0)
+    (define angle (random-angle))
+    (update-star (starline-start starline)
+                 (create-star (wormhole-max-z wormhole)
+                              angle
+                              wormhole))
+    (update-star (starline-end starline)
+                 (create-star (- (wormhole-max-z wormhole)
+                                 (random 6) 4)
+                              angle
+                              wormhole))))
 
 (define (move-wormhole wormhole display)
   (for ([starline (wormhole-stars wormhole)])
-    (move-starline starline)))
+    (move-starline starline wormhole)))
 
 (define-syntax-parameter quit (lambda (stx) (raise-syntax-error 'quit "syntax parameter")))
 (define-syntax-rule (block code ...)
@@ -183,9 +201,7 @@
       (XSetForeground display graphics-context black)
       (XFillRectangle display work graphics-context 0 0 width height)
       (draw-wormhole wormhole work display graphics-context white)
-      (XCopyArea display work window graphics-context 0 0 width height 0 0)
-      (XSync display #f)
-      )
+      (XCopyArea display work window graphics-context 0 0 width height 0 0))
 
     (define (logic)
       (handle-events)
