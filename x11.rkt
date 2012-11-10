@@ -325,6 +325,33 @@
                 Colormap         = #b010000000000000
                 Cursor           = #b100000000000000)
               _ulong))
+  
+  (define GCAttributes
+    (_bitmask '(Function          =    #b00000000000000000000001
+                PlaneMask         =    #b00000000000000000000010
+                Foreground        =    #b00000000000000000000100
+                Background        =    #b00000000000000000001000
+                LineWidth         =    #b00000000000000000010000
+                LineStyle         =    #b00000000000000000100000
+                CapStyle          =    #b00000000000000001000000
+                JoinStyle         =    #b00000000000000010000000
+                FillStyle         =    #b00000000000000100000000
+                FillRule          =    #b00000000000001000000000
+                Tile              =    #b00000000000010000000000
+                Stipple           =    #b00000000000100000000000
+                TileStipXOrigin   =    #b00000000001000000000000
+                TileStipYOrigin   =    #b00000000010000000000000
+                Font              =    #b00000000100000000000000
+                SubwindowMode     =    #b00000001000000000000000
+                GraphicsExposures =    #b00000010000000000000000
+                ClipXOrigin       =    #b00000100000000000000000
+                ClipYOrigin       =    #b00001000000000000000000
+                ClipMask          =    #b00010000000000000000000
+                DashOffset        =    #b00100000000000000000000
+                DashList          =    #b01000000000000000000000
+                ArcMode           =    #b10000000000000000000000
+                LastBit           =    #b10000000000000000000000)
+              _ulong))
 
   (define XICCEncodingStyle
     (_enum '(XStringStyle
@@ -1090,7 +1117,8 @@ Bool same_screen;	/* same screen flag */
 		    0 #f 0 0
 		    0 0 0))
 
-  (provide _XGCValues XGCValues-tag make-dummy-XGCValues)
+  (provide _XGCValues XGCValues-tag make-dummy-XGCValues
+           set-XGCValues-font! set-XGCValues-foreground!)
 
 #|
 typedef struct {
@@ -1314,6 +1342,8 @@ int (*add_pixel)            (struct _XImage *, long);
      (blue _ushort)
      (flags _byte)
      (pad _byte)))
+
+  (provide XColor-pixel)
 
   (provide make-XColor-rgb)
   (define (make-XColor-rgb red green blue)
@@ -1851,7 +1881,7 @@ int count;		/* defines range of change w. first_keycode*/
   (defx11* XSetErrorHandler : (_fun _XDisplay-pointer _XErrorEvent-pointer -> _int) -> _void)
 
   (defx11* XCreateGC :
-	   _XDisplay-pointer Drawable _ulong _XGCValues-pointer/null -> _XGC-pointer)
+	   _XDisplay-pointer Drawable GCAttributes _XGCValues-pointer/null -> _XGC-pointer)
 
   (defx11* XGetGCValues :
 	   _XDisplay-pointer _XGC-pointer _ulong _XGCValues-pointer -> Status)

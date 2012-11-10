@@ -88,7 +88,7 @@
   (inexact->exact (round x)))
 
 (define (draw-starline line work display gc white)
-  (XSetForeground display gc white)
+  (XSetForeground display gc (XColor-pixel white))
   (define-values (begin-x begin-y)
                  (project-star (starline-start line)))
   (define-values (end-x end-y)
@@ -102,7 +102,8 @@
     (draw-starline star work display gc white)))
 
 (define (move-star star)
-  (set-star-z! star (sub1 (star-z star))))
+  (define z-speed 5)
+  (set-star-z! star (- (star-z star) z-speed)))
 
 (define (move-starline starline)
   (move-star (starline-start starline))
@@ -162,13 +163,16 @@
         ;; received an event so search for another one
         (handle-events)))
 
-    (define graphics-context (XCreateGC display window 0 #f))
     (define colormap (XWindowAttributes-colormap (XGetWindowAttributes display window)))
     (define work (XCreatePixmap display window 640 480 depth))
     (define (alloc-color name default)
       (AllocNamedColor display window name default))
     (define black (XAllocColor display colormap (make-XColor-rgb 0 0 0)))
-    (define white (XAllocColor display colormap (make-XColor-rgb 60000 60000 60000)))
+    (define white (make-XColor-rgb 60000 60000 60000))
+    (XAllocColor display colormap white)
+
+    (define gc-values (make-dummy-XGCValues))
+    (define graphics-context (XCreateGC display window '() gc-values))
 
     (define wormhole (create-wormhole display window))
 
@@ -176,10 +180,12 @@
       (define attributes (XGetWindowAttributes display window))
       (define width (XWindowAttributes-width attributes))
       (define height (XWindowAttributes-height attributes))
-      (XSetForeground display graphics-context white)
+      (XSetForeground display graphics-context black)
       (XFillRectangle display work graphics-context 0 0 width height)
       (draw-wormhole wormhole work display graphics-context white)
-      (XCopyArea display work window graphics-context 0 0 width height 0 0))
+      (XCopyArea display work window graphics-context 0 0 width height 0 0)
+      (XSync display #f)
+      )
 
     (define (logic)
       (handle-events)
