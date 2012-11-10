@@ -59,7 +59,7 @@
               (angle-to x y want-x want-y) 
               (angle-to x y want-x want-y)
               want-x want-y
-              700
+              600
               20
               0
               (create-color-changer display)
@@ -87,19 +87,40 @@
 (define (int x)
   (inexact->exact (round x)))
 
-(define (draw-starline line work display gc white)
-  (XSetForeground display gc (XColor-pixel white))
+(define (in what start end)
+  (and (>= what start)
+       (<= what end)))
+
+(define (draw-starline line work display gc colors max-z)
+  (define z (star-z (starline-start line)))
+  (define color (list-ref colors (int (/ (* (- max-z z) (sub1 (length colors))) max-z))))
+  ; (define use (int (/ (* (- max-z z) (sub1 (length colors))) max-z)))
+  ; (define use (random 2))
+  ; (define color (list-ref colors use))
+  (XSetForeground display gc color)
+
   (define-values (begin-x begin-y)
                  (project-star (starline-start line)))
   (define-values (end-x end-y)
                  (project-star (starline-end line)))
+
+  (define-values (x1 y1 x2 y2)
+                 (values
+                 (int begin-x) (int begin-y)
+                 (int end-x) (int end-y)))
+  
+  #;
+  (printf "Line ~a, ~a to ~a, ~a\n" x1 y1 x2 y2)
+  (XDrawLine display work gc x1 y1 x2 y2)
+
+  #;
   (XDrawLine display work gc
              (int begin-x) (int begin-y)
              (int end-x) (int end-y)))
 
-(define (draw-wormhole wormhole work display gc white)
+(define (draw-wormhole wormhole work display gc colors)
   (for ([star (wormhole-stars wormhole)])
-    (draw-starline star work display gc white)))
+    (draw-starline star work display gc colors (wormhole-max-z wormhole))))
 
 (define (move-star star)
   (define z-speed 10)
@@ -137,6 +158,11 @@
     (syntax-parameterize ([quit (make-rename-transformer #'break)])
       code ...)))
 
+(define-syntax-rule (print-time what expr ...)
+                    (begin
+                      (printf "~a\n" what)
+                      (time expr ...)))
+
 (define (application frames-per-second logic draw)
   (define time current-inexact-milliseconds)
 
@@ -154,7 +180,8 @@
       (begin
         (for ([i (in-range 1 loops)])
           (logic))
-        (draw)
+        (print-time "Draw" (draw))
+        (printf "FPS ~a\n" (/ 1000 (- (time) now)))
         (loop (time)))
       (begin
         (sleep 0.001)
@@ -185,7 +212,8 @@
     (define work (XCreatePixmap display window 640 480 depth))
     (define (alloc-color name default)
       (AllocNamedColor display window name default))
-    (define black (XAllocColor display colormap (make-XColor-rgb 0 0 0)))
+    (define black (make-XColor-rgb 0 0 0))
+    (XAllocColor display colormap black)
     (define white (make-XColor-rgb 60000 60000 60000))
     (XAllocColor display colormap white)
 
@@ -194,19 +222,25 @@
 
     (define wormhole (create-wormhole display window))
 
+    (define max-colors 50)
+    (define colors (for/list ([i max-colors])
+                     (define value (int (* i (/ 65535 max-colors))))
+                     (define color (make-XColor-rgb value value value))
+                     (XAllocColor display colormap color)
+                     (XColor-pixel color)))
+
     (define (draw work window)
       (define attributes (XGetWindowAttributes display window))
       (define width (XWindowAttributes-width attributes))
       (define height (XWindowAttributes-height attributes))
-      (XSetForeground display graphics-context black)
+      (XSetForeground display graphics-context (XColor-pixel black))
       (XFillRectangle display work graphics-context 0 0 width height)
-      (draw-wormhole wormhole work display graphics-context white)
+      (draw-wormhole wormhole work display graphics-context colors)
       (XCopyArea display work window graphics-context 0 0 width height 0 0))
 
     (define (logic)
       (handle-events)
-      (move-wormhole wormhole display)
-      (void))
+      (move-wormhole wormhole display))
 
     (application frames-per-second logic (lambda () (draw work window)))))
 
