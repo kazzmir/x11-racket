@@ -2,7 +2,12 @@
 
 (require "../x11.rkt"
          racket/stxparam
+         racket/math
          (for-syntax racket/base))
+
+(struct star [x y z center-x center-y] #:mutable)
+
+(struct starline [start end])
 
 (struct wormhole
         [diameter diameter-change
@@ -10,7 +15,7 @@
          speed
          angle want-angle
          want-x want-y
-         max-Z
+         max-z
          add-star
          spiral
          color-changer
@@ -20,8 +25,21 @@
 (define (angle-to x1 y1 x2 y2)
   (atan (- y2 y1) (- x2 x1)))
 
+(define (random-angle)
+  (* (random 360) pi 1/180))
+
+(define (create-star z angle wormhole)
+  (star (* (cos angle) (wormhole-diameter wormhole))
+        (* (sin angle) (wormhole-diameter wormhole))
+        z
+        (wormhole-x wormhole)
+        (wormhole-y wormhole)))
+
 (define (create-starline wormhole)
-  0)
+  (define angle (random-angle))
+  (define z (wormhole-max-z wormhole))
+  (starline (create-star z angle wormhole)
+            (create-star (+ z (random 6) 4) angle wormhole)))
 
 (define (create-color-changer display)
   0)
@@ -50,8 +68,49 @@
                                   (create-starline out)))
   out)
 
-(define (draw-wormhole wormhole work display)
-  #f)
+;; R3 -> R2
+(define (project coordinate center z)
+  (if (<= z 0)
+    (+ center (* coordinate 1024))
+    (+ center (/ (* coordinate 1024) z))))
+
+(define (project-star star)
+  (values (project
+            (star-x star)
+            (star-center-x star)
+            (star-z star))
+          (project
+            (star-y star)
+            (star-center-y star)
+            (star-z star))))
+
+(define (int x)
+  (inexact->exact (round x)))
+
+(define (draw-starline line work display gc white)
+  (XSetForeground display gc white)
+  (define-values (begin-x begin-y)
+                 (project-star (starline-start line)))
+  (define-values (end-x end-y)
+                 (project-star (starline-end line)))
+  (XDrawLine display work gc
+             (int begin-x) (int begin-y)
+             (int end-x) (int end-y)))
+
+(define (draw-wormhole wormhole work display gc white)
+  (for ([star (wormhole-stars wormhole)])
+    (draw-starline star work display gc white)))
+
+(define (move-star star)
+  (set-star-z! star (sub1 (star-z star))))
+
+(define (move-starline starline)
+  (move-star (starline-start starline))
+  (move-star (starline-end starline)))
+
+(define (move-wormhole wormhole display)
+  (for ([starline (wormhole-stars wormhole)])
+    (move-starline starline)))
 
 (define-syntax-parameter quit (lambda (stx) (raise-syntax-error 'quit "syntax parameter")))
 (define-syntax-rule (block code ...)
@@ -100,6 +159,7 @@
         (define event (XNextEvent* display))
         (case (XEvent-type event)
           [(KeyPress) (handle-key-press event)])
+        ;; received an event so search for another one
         (handle-events)))
 
     (define graphics-context (XCreateGC display window 0 #f))
@@ -112,18 +172,18 @@
 
     (define wormhole (create-wormhole display window))
 
-    (define (draw work screen)
-      (printf "draw\n")
+    (define (draw work window)
       (define attributes (XGetWindowAttributes display window))
       (define width (XWindowAttributes-width attributes))
       (define height (XWindowAttributes-height attributes))
       (XSetForeground display graphics-context white)
       (XFillRectangle display work graphics-context 0 0 width height)
-      (draw-wormhole wormhole work screen)
-      (XCopyArea display work screen graphics-context 0 0 width height 0 0))
+      (draw-wormhole wormhole work display graphics-context white)
+      (XCopyArea display work window graphics-context 0 0 width height 0 0))
 
     (define (logic)
       (handle-events)
+      (move-wormhole wormhole display)
       (void))
 
     (application frames-per-second logic (lambda () (draw work window)))))
