@@ -2190,15 +2190,18 @@ int count;		/* defines range of change w. first_keycode*/
 
   (defx11* XSetWMName : _XDisplay-pointer Window _XTextProperty-pointer -> _void)
 
+  ;@@ XGetErrorText
  (provide (rename-out [XGetErrorText-user XGetErrorText]))
- ;(defx11 XGetErrorText : _XDisplay-pointer _int _pointer (length : _int) -> _void)
- (defx11 XGetErrorText : _XDisplay-pointer _int _bytes (length : _int) -> _void)
+ (defx11 XGetErrorText : _XDisplay-pointer _int _pointer (length : _int) -> _void)
+ ;(defx11 XGetErrorText : _XDisplay-pointer _int _bytes (length : _int) -> _void)
  (define (XGetErrorText-user display code length)
-   ;(let ((str (malloc _byte length)))
-   (let ([str (make-bytes length)])
+   (let ((str (malloc _byte length)))
+   ;(let ([str (make-bytes length)])
      (XGetErrorText display code str length)
+     (define len (for/or ([i length]) (and (= (ptr-ref str _byte i) 0) i)))
      ;str))
-     (make-sized-byte-string str length))) ; ?
+     ;(make-sized-byte-string str length))) ; ?
+     (make-sized-byte-string str len))) ; ?
  
   (defx11* XSetWMNormalHints : _XDisplay-pointer Window _XSizeHints-pointer -> _void)
 
