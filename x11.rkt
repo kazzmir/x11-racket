@@ -412,12 +412,22 @@
              MappingNotify = 34
              LASTEvent = 35)))
 
+  ;;; Some constants
+  
   (define* CopyFromParent #f)
   (define* CopyFromParent/int 0)
   (define* None 0)
   (define* (None? x) (or (not x) (equal? x None))) ; sometimes the null pointer is turned into #f, sometimes into 0?
   
   (define* CurrentTime 0);(get-ffi-obj 'CurrentTime libx11 _long)) ; nope...
+  
+  (define* PointerRoot 1)
+  
+  (define* RevertTo
+    (_bitmask `(RevertToNone = 0
+                RevertToPointerRoot = 1
+                RevertToParent = 2)
+              _int))
 
   (define* InputMask ;sometimes called event_mask
     (_bitmask '(NoEventMask =              #x00000000
@@ -1139,6 +1149,8 @@ Colormap colormap;		/* color map to be associated with window */
 Cursor cursor;		/* cursor to be displayed (or None) */
 } XSetWindowAttributes;
 |#
+  
+  (define* ParentRelative 1)
 
   (define-cstruct _XSetWindowAttributes
 		  ((background-pixmap Pixmap)
@@ -2061,7 +2073,8 @@ int count;		/* defines range of change w. first_keycode*/
   (defx11* XFillRectangles : _XDisplay-pointer Drawable _XGC-pointer
 	   (_list i _XRectangle) _int -> _int)
 
-  (defx11* XSetInputFocus : _XDisplay-pointer Window _int Time -> _int)
+  ;(defx11* XSetInputFocus : _XDisplay-pointer Window _int Time -> _int)
+  (defx11* XSetInputFocus : _XDisplay-pointer Window RevertTo Time -> _int)
 
   (defx11* XFindContext : _XDisplay-pointer XID XContext (_ptr o XPointer)
 	   -> _int)
