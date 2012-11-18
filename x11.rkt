@@ -218,6 +218,7 @@
           #:unknown values))
   
   ;; Like AtomProperty, but accepts numbers as input too.
+  ;; To convert the numbers into strings, use XGetAtomName(s)
 (define* Atom 
   (make-ctype _ulong
               (λ(s-v)(if (symbol? s-v)
@@ -2171,6 +2172,7 @@ int count;		/* defines range of change w. first_keycode*/
   ;; (defx11* XGetAtomNames : _XDisplay-pointer (_list i Atom count) (count : _int) -> (_list o _string count))
   (defx11 XGetAtomNames : _XDisplay-pointer _pointer (c : _int) -> (_list o _string c))
 
+  ;; Laurent: I'm not sure this works...
   (provide (rename-out (XGetAtomNames-user XGetAtomNames)))
   (define (XGetAtomNames-user display atoms count)
 	   (XGetAtomNames display (list->cblock Atom count) count))
