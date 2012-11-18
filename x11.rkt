@@ -212,14 +212,18 @@
 	    XA_CAP_HEIGHT = 66
 	    XA_WM_CLASS = 67
 	    XA_WM_TRANSIENT_FOR = 68
-	    XA_LAST_PREDEFINED = 68)))
+	    XA_LAST_PREDEFINED = 68)
+          ; in case the incoming number is not recognized, just return it as is.
+          ; This is useful for the ctype Atom.
+          #:unknown values))
   
+  ;; Like AtomProperty, but accepts numbers as input too.
 (define* Atom 
   (make-ctype _ulong
               (λ(s-v)(if (symbol? s-v)
                        ((ctype-scheme->c AtomProperty) s-v)
                        s-v))
-              #f ; currently atomProperties are not turned back into symbols, but I don't think that is needed anyway (is it?)
+              (λ(v)((ctype-c->scheme AtomProperty) v))
               ))
 
 
@@ -2338,31 +2342,39 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XListPixmapFormats : _XDisplay-pointer (_ptr i _int) -> _XPixmapFormatValues-pointer)
 (defx11* XListDepths : _XDisplay-pointer _int (_ptr i _int) -> (_ptr i _int))
 (defx11* XReconfigureWMWindow : _XDisplay-pointer _ulong _int _uint _XWindowChanges-pointer -> _int)
-(defx11* XGetWMProtocols : _XDisplay-pointer _ulong _pointer (_ptr i _int) -> _int)
-(defx11* XIconifyWindow : _XDisplay-pointer Window _int -> _int)
-(defx11* XWithdrawWindow : _XDisplay-pointer Window _int -> _int)
-(defx11* XGetWMColormapWindows : _XDisplay-pointer Window _pointer (_ptr i _int) -> _int)
-(defx11* XActivateScreenSaver : _XDisplay-pointer -> _int)
-(defx11* XAddHost : _XDisplay-pointer _XHostAddress-pointer -> _int)
-(defx11* XAddHosts : _XDisplay-pointer _XHostAddress-pointer _int -> _int)
-(defx11* XAddToExtensionList : _pointer _XExtData-pointer -> _int)
-(defx11* XAddToSaveSet : _XDisplay-pointer _ulong -> _int)
-(defx11* XAllocColor : _XDisplay-pointer _ulong _XColor-pointer -> _int)
-(defx11* XAllocColorCells : _XDisplay-pointer _ulong _int (_ptr i _ulong) _uint (_ptr i _ulong) _uint -> _int)
-(defx11* XAllocColorPlanes : _XDisplay-pointer _ulong _int (_ptr i _ulong) _int _int _int _int (_ptr i _ulong) (_ptr i _ulong) (_ptr i _ulong) -> _int)
-(defx11* XAllowEvents : _XDisplay-pointer _int _ulong -> _int)
-(defx11* XAutoRepeatOff : _XDisplay-pointer -> _int)
-(defx11* XAutoRepeatOn : _XDisplay-pointer -> _int)
-(defx11* XBell : _XDisplay-pointer _int -> _int)
-(defx11* XCellsOfScreen : _Screen-pointer -> _int)
-(defx11* XChangeActivePointerGrab : _XDisplay-pointer _uint _ulong _ulong -> _int)
-(defx11* XChangeGC : _XDisplay-pointer _XGC-pointer _ulong _XGCValues-pointer -> _int)
-(defx11* XChangeKeyboardControl : _XDisplay-pointer _ulong _XKeyboardControl-pointer -> _int)
-(defx11* XChangeKeyboardMapping : _XDisplay-pointer _int _int (_ptr i _ulong) _int -> _int)
-(defx11* XChangePointerControl : _XDisplay-pointer _int _int _int _int _int -> _int)
-(defx11* XChangeProperty : _XDisplay-pointer _ulong _ulong _ulong _int _int _pointer _int -> _int)
-(defx11* XChangeSaveSet : _XDisplay-pointer _ulong _int -> _int)
-(defx11* XChangeWindowAttributes : _XDisplay-pointer Window ChangeWindowAttributes _XSetWindowAttributes-pointer -> _int)
+
+;@@ GetWMProtocols
+(defx11* XGetWMProtocols : _XDisplay-pointer Window (atoms : (_ptr o _pointer)) (count : (_ptr o _int)) 
+  -> (status : Status)
+  -> (and status
+          (let ([out (cblock->list atoms Atom count)])
+            (register-finalizer out (λ(c)(XFree c)))
+            out)))
+
+(defx11* XIconifyWindow            : _XDisplay-pointer Window _int -> _int)
+(defx11* XWithdrawWindow           : _XDisplay-pointer Window _int -> _int)
+(defx11* XGetWMColormapWindows     : _XDisplay-pointer Window _pointer (_ptr i _int) -> _int)
+(defx11* XActivateScreenSaver      : _XDisplay-pointer -> _int)
+(defx11* XAddHost                  : _XDisplay-pointer _XHostAddress-pointer -> _int)
+(defx11* XAddHosts                 : _XDisplay-pointer _XHostAddress-pointer _int -> _int)
+(defx11* XAddToExtensionList       : _pointer _XExtData-pointer -> _int)
+(defx11* XAddToSaveSet             : _XDisplay-pointer _ulong -> _int)
+(defx11* XAllocColor               : _XDisplay-pointer _ulong _XColor-pointer -> _int)
+(defx11* XAllocColorCells          : _XDisplay-pointer _ulong _int (_ptr i _ulong) _uint (_ptr i _ulong) _uint -> _int)
+(defx11* XAllocColorPlanes         : _XDisplay-pointer _ulong _int (_ptr i _ulong) _int _int _int _int (_ptr i _ulong) (_ptr i _ulong) (_ptr i _ulong) -> _int)
+(defx11* XAllowEvents              : _XDisplay-pointer _int _ulong -> _int)
+(defx11* XAutoRepeatOff            : _XDisplay-pointer -> _int)
+(defx11* XAutoRepeatOn             : _XDisplay-pointer -> _int)
+(defx11* XBell                     : _XDisplay-pointer _int -> _int)
+(defx11* XCellsOfScreen            : _Screen-pointer -> _int)
+(defx11* XChangeActivePointerGrab  : _XDisplay-pointer _uint _ulong _ulong -> _int)
+(defx11* XChangeGC                 : _XDisplay-pointer _XGC-pointer _ulong _XGCValues-pointer -> _int)
+(defx11* XChangeKeyboardControl    : _XDisplay-pointer _ulong _XKeyboardControl-pointer -> _int)
+(defx11* XChangeKeyboardMapping    : _XDisplay-pointer _int _int (_ptr i _ulong) _int -> _int)
+(defx11* XChangePointerControl     : _XDisplay-pointer _int _int _int _int _int -> _int)
+(defx11* XChangeProperty           : _XDisplay-pointer _ulong _ulong _ulong _int _int _pointer _int -> _int)
+(defx11* XChangeSaveSet            : _XDisplay-pointer _ulong _int -> _int)
+(defx11* XChangeWindowAttributes   : _XDisplay-pointer Window ChangeWindowAttributes _XSetWindowAttributes-pointer -> _int)
 
 (defx11* XCheckIfEvent : _XDisplay-pointer _XEvent-pointer (_fun _XDisplay-pointer _XEvent-pointer _pointer -> _bool) _string -> _int)
 
