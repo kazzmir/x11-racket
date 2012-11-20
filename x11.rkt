@@ -2550,7 +2550,7 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XTextWidth16 : _XFontStruct-pointer _XChar2b-pointer _int -> _int)
 (defx11* XTranslateCoordinates : _XDisplay-pointer _ulong _ulong _int _int (_ptr i _int) (_ptr i _int) (_ptr i _ulong) -> _int)
 (defx11* XUndefineCursor : _XDisplay-pointer _ulong -> _int)
-(defx11* XUngrabButton : _XDisplay-pointer XK-Pointer Modifiers Window -> _int)
+(defx11* XUngrabButton : _XDisplay-pointer _uint Modifiers Window -> _int)
 (defx11* XUngrabKey : _XDisplay-pointer _int _uint _ulong -> _int)
 (defx11* XUngrabKeyboard : _XDisplay-pointer _ulong -> _int)
 ;(defx11* XUngrabPointer : _XDisplay-pointer _ulong -> _int)
