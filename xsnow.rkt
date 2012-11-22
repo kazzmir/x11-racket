@@ -1056,7 +1056,7 @@
     snow-pixs))
 
 (define (create-gc display rootWindow gc xgcv color pic)
-  (let ((new-gc (XCreateGC display rootWindow 0 xgcv)))
+  (let ((new-gc (XCreateGC display rootWindow '() xgcv)))
     (XCopyGC display gc 0 new-gc)
     (XSetStipple display new-gc (pic-pixmap pic))
     (XSetForeground display new-gc color)
@@ -1120,7 +1120,7 @@
   (define sleigh-color (alloc-color "chartreuse" black))
   (let* 
     ((sleigh-pics (create-sleigh2 display root-window santa-size))
-     (gc (let ((gc (XCreateGC display root-window 0 (make-dummy-XGCValues))))
+     (gc (let ((gc (XCreateGC display root-window '() (make-dummy-XGCValues))))
 	   (XSetForeground display gc black)
 	   (XSetFillStyle display gc 'FillStippled)
 	   gc))
@@ -1669,7 +1669,7 @@
                 (begin
                   (printf "Event type: \n~a\n" (XEvent-type event))
                   (loop (XPending display) #t)))))))))
-  (let* ((gc (let ((gc (XCreateGC display rootWindow 0 #f)))
+  (let* ((gc (let ((gc (XCreateGC display rootWindow '() #f)))
                (XGetGCValues display gc 0 xgcv)
                (XSetForeground display gc blackColor)
                (XSetFillStyle display gc 'FillStippled)
@@ -1707,7 +1707,7 @@
          (fur-gc (create-gc display rootWindow gc xgcv whiteColor fur-pic))
          (fur-sprite (make-sprite fur-pic fur-gc))
          (snow-sprites (map make-sprite snow-pixs snow-gcs))
-         (rudolf-gc (let ((rgc (XCreateGC display rootWindow 0 xgcv)))
+         (rudolf-gc (let ((rgc (XCreateGC display rootWindow '() xgcv)))
                       (XCopyGC display gc 0 rgc)
                       (XSetFillStyle display rgc 'FillSolid)
                       (XSetForeground display rgc redColor)
