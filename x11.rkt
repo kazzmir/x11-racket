@@ -685,10 +685,7 @@ Display,
   (define (make-dummy-XEvent)
     ;; 24 comes from Xlib.h
     ;; typedef union XEvent { ...; long pad[24]; }
-    ;(let ([s (malloc _int (* 24 (ctype-sizeof _long)))])
-    ; from the docs, the above would result in  (* 24 (ctype-sizeof _int) (ctype-sizeof _long))
     (let ([s (malloc 24 _long)])
-    ;(let ([s (malloc _long 24 'raw)]) ; for testing:(WARNING: memory leak) ; Nope, still crashes...
       (memset s 0 24 _long)
       (cpointer-push-tag! s XEvent-tag)
       s))
@@ -2530,7 +2527,7 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XRotateBuffers           : _XDisplay-pointer _int -> _int)
 (defx11* XRotateWindowProperties  : _XDisplay-pointer Window (_ptr i _ulong) _int _int -> _int)
 (defx11* XScreenCount             : _XDisplay-pointer -> _int)
-(defx11* XSendEvent               : _XDisplay-pointer Window _int _long _XEvent-pointer -> _int)
+(defx11* XSendEvent               : _XDisplay-pointer Window _bool _long _XEvent-pointer -> Status)
 
 (defx11* XSetAccessControl       : _XDisplay-pointer _int -> _int)
 (defx11* XSetArcMode             : _XDisplay-pointer _XGC-pointer _int -> _int)
