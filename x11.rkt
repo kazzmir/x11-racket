@@ -463,6 +463,18 @@
                 OwnerGrabButtonMask =      #x01000000)
 	      _long))
 
+  (define AllowEventMode
+    (_enum '(AsyncPointer = 0
+             SyncPointer
+             ReplayPointer
+             AsyncKeyboard
+             SyncKeyboard
+             ReplayKeyboard
+             AsyncBoth
+             SyncBoth
+             )))
+  
+
     #|
   typedef struct {
 	XExtData *ext_data;	/* hook for extension to hang data */
@@ -2362,7 +2374,8 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XAllocColor               : _XDisplay-pointer _ulong _XColor-pointer -> _int)
 (defx11* XAllocColorCells          : _XDisplay-pointer _ulong _int (_ptr i _ulong) _uint (_ptr i _ulong) _uint -> _int)
 (defx11* XAllocColorPlanes         : _XDisplay-pointer _ulong _int (_ptr i _ulong) _int _int _int _int (_ptr i _ulong) (_ptr i _ulong) (_ptr i _ulong) -> _int)
-(defx11* XAllowEvents              : _XDisplay-pointer _int _ulong -> _int)
+;(defx11* XAllowEvents              : _XDisplay-pointer _int _ulong -> _int)
+(defx11* XAllowEvents              : _XDisplay-pointer AllowEventMode Time -> _int)
 (defx11* XAutoRepeatOff            : _XDisplay-pointer -> _int)
 (defx11* XAutoRepeatOn             : _XDisplay-pointer -> _int)
 (defx11* XBell                     : _XDisplay-pointer _int -> _int)
