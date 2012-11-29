@@ -20,6 +20,10 @@
          ;"keysymtype.rkt"
          )
 
+(module+ test
+  (require rackunit
+           racket/list))
+
 (define libx11 (ffi-lib "libX11" '("6")))
 
 ;; Checks the environment for a DEBUG variable
@@ -1061,7 +1065,9 @@ Bool same_screen;	/* same screen flag */
      (message-type Atom)
      (format _int)
      ;(data _cvector)
-     (data (_array _int32 5))
+     (data (_union (_array _int8  20)
+                   (_array _int16 10)
+                   (_array _int32 5)))
      ))
   
   ;; Laurent Orseau -- 2012-10-27
@@ -2571,25 +2577,40 @@ int count;		/* defines range of change w. first_keycode*/
   (set-XClientMessageEvent-format!        event format)
   
   (define data (XClientMessageEvent-data event))
-  (define vtype (case format [(8) _int8] [(16) _int16] [(32) _int32] 
-                  [else (error "Wrong format ~a; must be 8, 16 or 32" format)]))
-  (define vlen (/ 160 format));(case format [(8) 20] [(16) 10] [(32) 5]))
-  (define vec (make-cvector* (array-ptr data) vtype vlen))
+  (define vec (union-ref 
+               data 
+               (case format [(8) 0] [(16) 1] [(32) 2]
+                 [else (error "Wrong format ~a; must be 8, 16 or 32" format)])))
   ; fills the vector with the list and filles the remaining elements with 0
   (for ([v (in-sequences msg-values (in-cycle '(0)))]
-        [i vlen])
-    (cvector-set! vec i v))
+        [i (array-length vec)])
+    (array-set! vec i v))
 
   event)
 
+(define* (ClientMessage-data/vector client-event)
+  (define data (XClientMessageEvent-data client-event))
+  (define format (XClientMessageEvent-format client-event))
+  (define vec (union-ref 
+               data 
+               (case format [(8) 0] [(16) 1] [(32) 2])))
+  (for/vector ([i (array-length vec)])
+    (array-ref vec i)))
+
 (module+ test
   (define dpy (XOpenDisplay #f))
-  (define event (make-ClientMessageEvent dpy 0 12 '(1 2 3) 32))
-  (XClientMessageEvent->list* event)
-  (define data (XClientMessageEvent-data event))
-  (for/list ([i 5])
-    (array-ref data i))
-  (XCloseDisplay dpy)
+  (define (check-client-data lvalues format)
+    (define event (make-ClientMessageEvent dpy 0 0 lvalues format))
+    (check-equal?
+     (take (vector->list (ClientMessage-data/vector event))
+           (length lvalues))
+     lvalues))
+  
+  (check-client-data '(1 2 3) 32)
+  (check-client-data '(1 2 3) 16)
+  (check-client-data '(1 2 3) 8)
+  
+  (void (XCloseDisplay dpy))
   )
 
 (defx11* XSetAccessControl       : _XDisplay-pointer _int -> _int)
