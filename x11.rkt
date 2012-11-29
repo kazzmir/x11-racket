@@ -2548,7 +2548,7 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XRotateBuffers           : _XDisplay-pointer _int -> _int)
 (defx11* XRotateWindowProperties  : _XDisplay-pointer Window (_ptr i _ulong) _int _int -> _int)
 (defx11* XScreenCount             : _XDisplay-pointer -> _int)
-(defx11* XSendEvent               : _XDisplay-pointer Window _bool _long _XEvent-pointer -> Status)
+(defx11* XSendEvent               : _XDisplay-pointer Window _bool InputMask _XEvent-pointer -> Status)
 
 (defx11* XSetAccessControl       : _XDisplay-pointer _int -> _int)
 (defx11* XSetArcMode             : _XDisplay-pointer _XGC-pointer _int -> _int)
