@@ -701,13 +701,16 @@ Display,
   ;; more laziness
   ;; Instead of making the union of all the possible event types,
   ;; we just create an empty event of the maximum size and 
-  ;; then turn it into the correct type using pointer-tag
-  (define (make-dummy-XEvent)
+  ;; then turn it into the correct type using pointer-tag.
+  ;; tag can be any XEvent* type
+  (define (make-dummy-XEvent [tag #f])
     ;; 24 comes from Xlib.h
     ;; typedef union XEvent { ...; long pad[24]; }
     (let ([s (malloc 24 _long)])
       (memset s 0 24 _long)
       (cpointer-push-tag! s XEvent-tag)
+      (when tag
+        (cpointer-push-tag! s tag))
       s))
   (provide XEvent-type make-XEvent XEvent->list* make-dummy-XEvent)
   
@@ -1057,7 +1060,9 @@ Bool same_screen;	/* same screen flag */
      (window Window)
      (message-type Atom)
      (format _int)
-     (data _cvector)))
+     ;(data _cvector)
+     (data (_array _int32 5))
+     ))
   
   ;; Laurent Orseau -- 2012-10-27
   ;; It's not really an XEvent?
@@ -2550,22 +2555,42 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XScreenCount             : _XDisplay-pointer -> _int)
 (defx11* XSendEvent               : _XDisplay-pointer Window _bool InputMask _XEvent-pointer -> Status)
 
+;; Wrapper for make-XClientMessageEvent
+;;  msg-type must be an atom.
+;;  format must be either 8, 16 or 32, and is the size in bits of each sent value.
+;;  msg-values must be a list of at most 20 8bits or 10 16bits or 5 32bits values.
+;;  If msg-values is longer than this, only the first elements are considered.
+;; http://tronche.com/gui/x/xlib/events/client-communication/client-message.html
 (define* (make-ClientMessageEvent display window msg-type msg-values [format 32])
-  ;; http://tronche.com/gui/x/xlib/events/client-communication/client-message.html
+  ; need to use a dummy event, because it must be 24 long.
+  (define event (make-dummy-XEvent 'XClientMessageEvent))
+  (set-XClientMessageEvent-type!          event 'ClientMessage)
+  (set-XClientMessageEvent-display!       event display)
+  (set-XClientMessageEvent-window!        event window)
+  (set-XClientMessageEvent-message-type!  event msg-type)
+  (set-XClientMessageEvent-format!        event format)
+  
+  (define data (XClientMessageEvent-data event))
   (define vtype (case format [(8) _int8] [(16) _int16] [(32) _int32] 
                   [else (error "Wrong format ~a; must be 8, 16 or 32" format)]))
   (define vlen (/ 160 format));(case format [(8) 20] [(16) 10] [(32) 5]))
-  (define vec (make-cvector vtype vlen))
+  (define vec (make-cvector* (array-ptr data) vtype vlen))
   ; fills the vector with the list and filles the remaining elements with 0
   (for ([v (in-sequences msg-values (in-cycle '(0)))]
         [i vlen])
     (cvector-set! vec i v))
-  (define event 
-    (make-XClientMessageEvent 
-     'ClientMessage 0 #f display window msg-type format vec))
-  ; put the XEvent tag last, so that XClientMessageEvent is the one that gets printed
-  (set-cpointer-tag! event '(XClientMessageEvent XEvent))
+
   event)
+
+(module+ test
+  (define dpy (XOpenDisplay #f))
+  (define event (make-ClientMessageEvent dpy 0 12 '(1 2 3) 32))
+  (XClientMessageEvent->list* event)
+  (define data (XClientMessageEvent-data event))
+  (for/list ([i 5])
+    (array-ref data i))
+  (XCloseDisplay dpy)
+  )
 
 (defx11* XSetAccessControl       : _XDisplay-pointer _int -> _int)
 (defx11* XSetArcMode             : _XDisplay-pointer _XGC-pointer _int -> _int)
