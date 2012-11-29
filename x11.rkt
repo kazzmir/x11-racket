@@ -2550,6 +2550,23 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XScreenCount             : _XDisplay-pointer -> _int)
 (defx11* XSendEvent               : _XDisplay-pointer Window _bool InputMask _XEvent-pointer -> Status)
 
+(define* (make-ClientMessageEvent display window msg-type msg-values [format 32])
+  ;; http://tronche.com/gui/x/xlib/events/client-communication/client-message.html
+  (define vtype (case format [(8) _int8] [(16) _int16] [(32) _int32] 
+                  [else (error "Wrong format ~a; must be 8, 16 or 32" format)]))
+  (define vlen (/ 160 format));(case format [(8) 20] [(16) 10] [(32) 5]))
+  (define vec (make-cvector vtype vlen))
+  ; fills the vector with the list and filles the remaining elements with 0
+  (for ([v (in-sequences msg-values (in-cycle '(0)))]
+        [i vlen])
+    (cvector-set! vec i v))
+  (define event 
+    (make-XClientMessageEvent 
+     'ClientMessage 0 #f display window msg-type format vec))
+  ; put the XEvent tag last, so that XClientMessageEvent is the one that gets printed
+  (set-cpointer-tag! event '(XClientMessageEvent XEvent))
+  event)
+
 (defx11* XSetAccessControl       : _XDisplay-pointer _int -> _int)
 (defx11* XSetArcMode             : _XDisplay-pointer _XGC-pointer _int -> _int)
 (defx11* XSetBackground          : _XDisplay-pointer _XGC-pointer _ulong -> _int)
