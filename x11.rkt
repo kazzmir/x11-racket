@@ -217,15 +217,23 @@
           ; This is useful for the ctype Atom.
           #:unknown values))
   
+  ;; Converts an atom symbol to a _uint number
+  (define* (atom-symbol->number atom)
+    ((ctype-scheme->c AtomProperty) atom))
+  
+  ;; Converts an atom (symbol or number) to an atom number
+  (define* (atom->number atom)
+    (if (symbol? atom)
+        (atom-symbol->number atom)
+        atom))
+  
   ;; Like AtomProperty, but accepts numbers as input too.
   ;; To convert the numbers into strings, use XGetAtomName(s)
-(define* Atom 
-  (make-ctype _ulong
-              (λ(s-v)(if (symbol? s-v)
-                       ((ctype-scheme->c AtomProperty) s-v)
-                       s-v))
-              (λ(v)((ctype-c->scheme AtomProperty) v))
-              ))
+  (define* Atom 
+    (make-ctype _ulong
+                atom->number
+                (λ(v)((ctype-c->scheme AtomProperty) v))
+                ))
 
 
   (define XK-Pointer
