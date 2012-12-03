@@ -57,10 +57,10 @@
        ;; use debug to select between the two things so we don't always
        ;; pay the cost of an extra lambda on top of the ffi function
        (if-debug (define (id . v)
-                   (x11-dprintf "~a: ~a" 'id v)
+                   (x11-dprintf "~a: ~v" 'id v)
                    (flush-output)
                    (let ([res (call-with-values (λ()(apply func v)) list)])
-                     (printf " -> ~a\n" res)
+                     (printf " -> ~v\n" res)
                      (apply values res)
                      ))
                  (define id func)))]))
