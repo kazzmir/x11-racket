@@ -5,27 +5,19 @@
   
 (define libxinput (ffi-lib "libXi"))
 
-(define-syntax defx11
+(define-syntax defxi
   (syntax-rules (:)
-    #;
-    ((_ id : x ...)
-     (define id
-       (let ((f (get-ffi-obj (regexp-replaces 'id '((#rx"-" "_")))
-                             libxinput (_fun x ...))))
-         (lambda v
-           (printf "~a ~a\n" 'id v)
-           (apply f v)))))
     ((_ id : x ...)
      (define id
        (get-ffi-obj (regexp-replaces (symbol->string 'id) '((#rx"-" "_")))
                     libxinput (_fun x ...))))))
 
 ;; just provide the above
-(define-syntax defx11*
+(define-syntax defxi*
   (syntax-rules (:)
     ((_ id : x ...)
      (begin
-       (defx11 id : x ...)
+       (defxi id : x ...)
        (provide id)))
     ((_ (id x ...) expr ...)
      (begin
@@ -95,8 +87,8 @@
    [num-classes _int]
    [data _XInputClass-pointer]))
 
-(defx11 XFreeDeviceList : _XDeviceInfo-pointer -> _int)
-(defx11* XListInputDevices : _XDisplay-pointer (devices : (_ptr o _int)) -> (infos : _XDeviceInfo-pointer) ->
+(defxi XFreeDeviceList : _XDeviceInfo-pointer -> _int)
+(defxi* XListInputDevices : _XDisplay-pointer (devices : (_ptr o _int)) -> (infos : _XDeviceInfo-pointer) ->
          (let ([out (cblock->list infos _XDeviceInfo devices)])
            (register-finalizer out (lambda (c) (XFreeDeviceList infos)))
            (for-each (lambda (info)
@@ -107,10 +99,10 @@
                      (map XDeviceInfo-input-class-info out))
            out))
 
-(defx11* XOpenDevice : _XDisplay-pointer XID -> _XDevice-pointer)
-(defx11* XCloseDevice : _XDevice-pointer _XDevice-pointer -> _int)
-(defx11 XFreeDeviceState : _XDevice-pointer -> _void)
-(defx11* XQueryDeviceState : _XDisplay-pointer _XDisplay-pointer -> (out : _XDeviceState-pointer) ->
+(defxi* XOpenDevice : _XDisplay-pointer XID -> _XDevice-pointer)
+(defxi* XCloseDevice : _XDevice-pointer _XDevice-pointer -> _int)
+(defxi XFreeDeviceState : _XDevice-pointer -> _void)
+(defxi* XQueryDeviceState : _XDisplay-pointer _XDisplay-pointer -> (out : _XDeviceState-pointer) ->
          (begin
            (register-finalizer out (lambda (c) (XFreeDeviceState out)))
            out))
