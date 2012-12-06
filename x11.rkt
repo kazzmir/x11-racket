@@ -25,6 +25,7 @@
            racket/list))
 
 (define libx11 (ffi-lib "libX11" '("6")))
+;(provide libx11)
 
 ;; Checks the environment for a DEBUG variable
 ;; Usage example: X11_RACKET_DEBUG=1 racket test-x11.rkt
@@ -77,6 +78,7 @@
        (provide id)
        (define id (lambda (x ...)
                     expr ...)))]))
+(provide defx11 defx11*)
 
 ;; Parameter to control how debug messages are printed
 ;; (useful for grepping)
@@ -1450,13 +1452,14 @@ char auto_repeats[32];
 		   (global-auto-repeat _int)
 		   (auto-repeats _pointer)))
 
-  (define-cstruct _XRectangle
+  (define-cstruct* _XRectangle
     ((x _short)
      (y _short)
      (width _short)
      (height _short)))
   (provide make-XRectangle XRectangle-width XRectangle-height XRectangle-x XRectangle-y
-	   set-XRectangle-height! set-XRectangle-width! set-XRectangle-x! set-XRectangle-y!)
+	   set-XRectangle-height! set-XRectangle-width! set-XRectangle-x! set-XRectangle-y!
+           _XRectangle) ; used in Xinerama
   #;
   (provide _XRectangle XRectangle-tag set-XRectangle-x! set-XRectangle-y!
 	   set-XRectangle-width! set-XRectangle-height!)
