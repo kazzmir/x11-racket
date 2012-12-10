@@ -1923,7 +1923,7 @@ int count;		/* defines range of change w. first_keycode*/
     (nchildren : (_ptr o _int))
     -> Status
     -> (let ([out (cblock->list children Window nchildren)])
-         (register-finalizer out XFree)
+         (register-finalizer out (λ(out)(XFree children)))
          out))
 
   (defx11* XSetErrorHandler : (_fun _XDisplay-pointer _XErrorEvent-pointer -> _int) -> _void)
@@ -2072,7 +2072,7 @@ int count;		/* defines range of change w. first_keycode*/
   (defx11* XFetchBytes : _XDisplay-pointer (bytes : (_ptr o _int))
     -> (data : _pointer)
     -> (let ((l (cblock->list data _byte _bytes)))
-         (register-finalizer l XFree)
+         (register-finalizer l (λ(l)(XFree data)))
          l))
 
   ;; fix
@@ -2381,7 +2381,7 @@ int count;		/* defines range of change w. first_keycode*/
   -> (status : Status)
   -> (and status
           (let ([out (cblock->list atoms Atom count)])
-            (register-finalizer out XFree)
+            (register-finalizer out (λ(out)(XFree atoms)))
             out)))
 
 (defx11* XIconifyWindow            : _XDisplay-pointer Window _int -> _int)
@@ -2767,7 +2767,7 @@ int count;		/* defines range of change w. first_keycode*/
   -> (status : Status)
   -> (and status
           (let ([out (cblock->list lstr _string count)])
-            (register-finalizer out XFreeStringList)
+            (register-finalizer out (λ(out)(XFreeStringList lstr)))
             out)))
 ; Status XTextPropertyToStringList(text_prop, list_return, count_return)
 ;       XTextProperty *text_prop;
