@@ -1916,15 +1916,15 @@ int count;		/* defines range of change w. first_keycode*/
 
   ;; Return a list of int's( Window ids )
   (defx11* XQueryTree :
-	   _XDisplay-pointer Window 
-	   (f1 : (_ptr o Window)) ;; dont care
-	   (f2 : (_ptr o Window)) ;; dont care
-	   (children : (_ptr o _pointer))
-	   (nchildren : (_ptr o _int))
-	   -> Status
-	   -> (let ([out (cblock->list children Window nchildren)])
-            (register-finalizer out (lambda (c) (XFree c)))
-            out))
+    _XDisplay-pointer Window 
+    (f1 : (_ptr o Window)) ;; dont care
+    (f2 : (_ptr o Window)) ;; dont care
+    (children : (_ptr o _pointer))
+    (nchildren : (_ptr o _int))
+    -> Status
+    -> (let ([out (cblock->list children Window nchildren)])
+         (register-finalizer out XFree)
+         out))
 
   (defx11* XSetErrorHandler : (_fun _XDisplay-pointer _XErrorEvent-pointer -> _int) -> _void)
 
@@ -2070,11 +2070,10 @@ int count;		/* defines range of change w. first_keycode*/
 
   ;; listof(_char)
   (defx11* XFetchBytes : _XDisplay-pointer (bytes : (_ptr o _int))
-	   -> (data : _pointer)
-	   -> (let ((l (cblock->list data _byte _bytes)))
-		(register-finalizer l (lambda (x)
-					(XFree x)))
-		l))
+    -> (data : _pointer)
+    -> (let ((l (cblock->list data _byte _bytes)))
+         (register-finalizer l XFree)
+         l))
 
   ;; fix
   (defx11* XFetchName : _XDisplay-pointer Window (_ptr o _string) -> Status)
@@ -2382,7 +2381,7 @@ int count;		/* defines range of change w. first_keycode*/
   -> (status : Status)
   -> (and status
           (let ([out (cblock->list atoms Atom count)])
-            (register-finalizer out (λ(c)(XFree c)))
+            (register-finalizer out XFree)
             out)))
 
 (defx11* XIconifyWindow            : _XDisplay-pointer Window _int -> _int)
@@ -2768,7 +2767,7 @@ int count;		/* defines range of change w. first_keycode*/
   -> (status : Status)
   -> (and status
           (let ([out (cblock->list lstr _string count)])
-            (register-finalizer out (lambda (c) (XFreeStringList c)))
+            (register-finalizer out XFreeStringList)
             out)))
 ; Status XTextPropertyToStringList(text_prop, list_return, count_return)
 ;       XTextProperty *text_prop;
