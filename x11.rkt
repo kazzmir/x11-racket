@@ -18,6 +18,7 @@
          "fd.rkt" 
          "utils.rkt"
          ;"keysymtype.rkt"
+         rackunit
          )
 
 (module+ test
@@ -487,6 +488,12 @@
              AsyncBoth
              SyncBoth
              )))
+  
+  ;; for XChangeProperty
+  (define PropMode
+    (_enum '(PropModeReplace
+             PropModePrepend
+             PropModeAppend)))
   
 
     #|
@@ -1756,19 +1763,23 @@ int count;		/* defines range of change w. first_keycode*/
 
   ;; this makes things work in KDE
   (define (virtual-root-window screen)
-   (let* ((display (Screen-display screen))
-	  (root (Screen-root screen))
-	  (swm-vroot (XInternAtom display "__SWM_VROOT" #f)))
-    (for-each (lambda (window)
-	       (let ((new-window (XGetWindowProperty display window
-				  swm-vroot 0 1 #f 'XA_WINDOW)))
-		(when new-window
-		 (set! root (ptr-ref new-window Window 0)))))
-     (XQueryTree display root))
-    root))
+    (let* ([display (Screen-display screen)]
+           [root (Screen-root screen)]
+           [swm-vroot (XInternAtom display "__SWM_VROOT" #f)])
+      (for-each (lambda (window)
+                  (let ([new-window (XGetWindowProperty display window
+                                                        swm-vroot 0 1 #f 'XA_WINDOW)])
+                    (when new-window
+                      (set! root (ptr-ref new-window Window 0)))))
+                (XQueryTree display root))
+      root))
 
   (defx11* XInternAtom : _XDisplay-pointer _string _bool -> Atom)
 
+  ;; TODO: 
+  ;; - Currently, does only a subset of what it is supposed to do.
+  ;; - The data should be freed with XFree().
+  ;; See: http://tronche.com/gui/x/xlib/window-information/XGetWindowProperty.html
   (defx11* XGetWindowProperty :
    _XDisplay-pointer Window
    Atom _long _long _bool Atom
@@ -2332,7 +2343,15 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XListFonts                : _XDisplay-pointer _string _int (_ptr i _int) -> (_ptr i _string))
 (defx11* XListFontsWithInfo        : _XDisplay-pointer _string _int (_ptr i _int) _pointer -> (_ptr i _string))
 (defx11* XListExtensions           : _XDisplay-pointer (_ptr i _int) -> (_ptr i _string))
-(defx11* XListProperties           : _XDisplay-pointer _ulong (_ptr i _int) -> (_ptr i _ulong))
+
+(defx11* XListProperties           : _XDisplay-pointer Window (count : (_ptr o _int)) 
+  -> (atoms : _pointer)
+  -> (if atoms
+         (let ([out (cblock->list atoms Atom count)])
+           (register-finalizer out (λ(out)(XFree atoms)))
+           out)
+         '()))
+
 (defx11* XListHosts                : _XDisplay-pointer (_ptr i _int) (_ptr i _int) -> _XHostAddress-pointer)
 (defx11* XKeycodeToKeysym          : _XDisplay-pointer _ubyte _int -> KeySym)
 (defx11* XLookupKeysym             : _XKeyEvent-pointer _int -> KeySym)
@@ -2406,7 +2425,17 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XChangeKeyboardControl    : _XDisplay-pointer _ulong _XKeyboardControl-pointer -> _int)
 (defx11* XChangeKeyboardMapping    : _XDisplay-pointer _int _int (_ptr i _ulong) _int -> _int)
 (defx11* XChangePointerControl     : _XDisplay-pointer _int _int _int _int _int -> _int)
-(defx11* XChangeProperty           : _XDisplay-pointer _ulong _ulong _ulong _int _int _pointer _int -> _int)
+
+(defx11* XChangeProperty           : _XDisplay-pointer Window Atom Atom _int PropMode _pointer _int -> _void)
+;; Use this wrapper instead:
+;; data-list is a list of values that will be converted to <format>-bits values.
+(define* (ChangeProperty display window property type mode data-list format)
+  (check member format '(8 16 32))
+  (XChangeProperty display window property type format mode
+                   (list->cblock (append data-list '(0))
+                                 (case format [(8) _int8] [(16) _int16] [(32) _int32]))
+                   (length data-list)))
+
 (defx11* XChangeSaveSet            : _XDisplay-pointer _ulong _int -> _int)
 (defx11* XChangeWindowAttributes   : _XDisplay-pointer Window ChangeWindowAttributes _XSetWindowAttributes-pointer -> _int)
 
