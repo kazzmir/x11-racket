@@ -61,6 +61,7 @@
     (define propModeReplace 0)
     (define propModePrepend 1)
     (define propModeAppend  2)
+    ;; TODO: could use ChangeProperty instead (simpler)
     (XChangeProperty display w atom_WM_STATE atom_WM_STATE 32 propModeReplace (list->cblock (list s 0) _int32) 1))
   (define (set-WM-State-withdrawn! w) 
     (define withdrawnState 0)

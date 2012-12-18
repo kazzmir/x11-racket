@@ -1767,7 +1767,7 @@ int count;		/* defines range of change w. first_keycode*/
            [root (Screen-root screen)]
            [swm-vroot (XInternAtom display "__SWM_VROOT" #f)])
       (for-each (lambda (window)
-                  (let ([new-window (XGetWindowProperty display window
+                  (let-values ([(new-window n) (XGetWindowProperty display window
                                                         swm-vroot 0 1 #f 'XA_WINDOW)])
                     (when new-window
                       (set! root (ptr-ref new-window Window 0)))))
@@ -1783,14 +1783,27 @@ int count;		/* defines range of change w. first_keycode*/
   (defx11* XGetWindowProperty :
    _XDisplay-pointer Window
    Atom _long _long _bool Atom
-   (_ptr o Atom)
-   (_ptr o _int)
-   (_ptr o _ulong)
-   (_ptr o _ulong)
-   (ret : (_ptr o _pointer))
-   -> _bool
-   -> ret)
-
+   (actual_type : (_ptr o Atom))
+   (actual_format : (_ptr o _int))
+   (count : (_ptr o _ulong))
+   (bytes_after : (_ptr o _ulong))
+   (data : (_ptr o _pointer))
+   -> (res : _bool) ; returns Success if all ok
+   -> (values data count))
+  
+  ;; TODO: This procedure should be used in many places!
+  ;; (instead of rewriting it each time)
+  ;; (wait, couldn't we free the data just after the cblock->list operation? Or is the data still used somehow?)
+  (define (cblock->list/finalizer data type count [free XFree])
+    (define data-list (cblock->list data type count))
+    (register-finalizer data-list (λ(data-list)(free data)))
+    data-list)
+  ; TODO: Do the same with vector?
+  
+  (define* (GetWindowProperty dpy window property req-type return-data-type)
+    (define-values (data count) (XGetWindowProperty dpy window property 0 1 #f req-type))
+    (and data (cblock->list/finalizer data return-data-type count)))
+  
   ;; Return &(display->screens[screen])
   (define (screen-of-display display screen)
     (ptr-ref (XDisplay-screens display) _Screen screen))
@@ -2339,6 +2352,8 @@ int count;		/* defines range of change w. first_keycode*/
   InputType _Visual-pointer/null ChangeWindowAttributes _XSetWindowAttributes-pointer/null 
   -> Window)
 
+;; All these probably need to be fixed using cblock->list and a finalizer
+;; TODO: a function to abstract the finalizer and the conversion to list/vector, for ease of use and minimizing bug risk.
 (defx11* XListInstalledColormaps   : _XDisplay-pointer _ulong (_ptr i _int) -> (_ptr i _ulong))
 (defx11* XListFonts                : _XDisplay-pointer _string _int (_ptr i _int) -> (_ptr i _string))
 (defx11* XListFontsWithInfo        : _XDisplay-pointer _string _int (_ptr i _int) _pointer -> (_ptr i _string))
@@ -2432,7 +2447,7 @@ int count;		/* defines range of change w. first_keycode*/
 (define* (ChangeProperty display window property type mode data-list format)
   (check member format '(8 16 32))
   (XChangeProperty display window property type format mode
-                   (list->cblock (append data-list '(0))
+                   (list->cblock data-list ;(append data-list '(0))
                                  (case format [(8) _int8] [(16) _int16] [(32) _int32]))
                    (length data-list)))
 
