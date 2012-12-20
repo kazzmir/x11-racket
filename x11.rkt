@@ -1800,8 +1800,10 @@ int count;		/* defines range of change w. first_keycode*/
     data-list)
   ; TODO: Do the same with vector?
   
+  ;; Same as XGetWindowProperty but returns a list of values of type return-data-type
   (define* (GetWindowProperty dpy window property req-type return-data-type)
-    (define-values (data count) (XGetWindowProperty dpy window property 0 1 #f req-type))
+    ;; long-length=-1 so that actual_length returns the true, untruncated value
+    (define-values (data count) (XGetWindowProperty dpy window property 0 -1 #f req-type))
     (and data (cblock->list/finalizer data return-data-type count)))
   
   ;; Return &(display->screens[screen])
