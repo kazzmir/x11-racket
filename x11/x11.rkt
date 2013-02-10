@@ -2428,7 +2428,7 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XAddHosts                 : _XDisplay-pointer _XHostAddress-pointer _int -> _int)
 (defx11* XAddToExtensionList       : _pointer _XExtData-pointer -> _int)
 (defx11* XAddToSaveSet             : _XDisplay-pointer _ulong -> _int)
-(defx11* XAllocColor               : _XDisplay-pointer _ulong _XColor-pointer -> _int)
+(defx11* XAllocColor               : _XDisplay-pointer _ulong _XColor-pointer -> Status)
 (defx11* XAllocColorCells          : _XDisplay-pointer _ulong _int (_ptr i _ulong) _uint (_ptr i _ulong) _uint -> _int)
 (defx11* XAllocColorPlanes         : _XDisplay-pointer _ulong _int (_ptr i _ulong) _int _int _int _int (_ptr i _ulong) (_ptr i _ulong) (_ptr i _ulong) -> _int)
 ;(defx11* XAllowEvents              : _XDisplay-pointer _int _ulong -> _int)
