@@ -2540,7 +2540,7 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XKeysymToKeycode    : _XDisplay-pointer KeySym -> KeyCode)
 (defx11* XKillClient         : _XDisplay-pointer _ulong -> _int)
 (defx11* XLookupColor        : _XDisplay-pointer _ulong _string _XColor-pointer _XColor-pointer -> _int)
-(defx11* XLowerWindow        : _XDisplay-pointer Window -> _int)
+(defx11* XLowerWindow        : _XDisplay-pointer Window -> _void)
 (defx11* XMapRaised          : _XDisplay-pointer Window -> _int)
 (defx11* XMapSubwindows      : _XDisplay-pointer Window -> _int)
 (defx11* XMapWindow          : _XDisplay-pointer Window -> _int)
@@ -2591,7 +2591,7 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XQueryTextExtents : _XDisplay-pointer _ulong _string _int (_ptr i _int) (_ptr i _int) (_ptr i _int) _XCharStruct-pointer -> _int)
 (defx11* XQueryTextExtents16 : _XDisplay-pointer _ulong _XChar2b-pointer _int (_ptr i _int) (_ptr i _int) (_ptr i _int) _XCharStruct-pointer -> _int)
 
-(defx11* XRaiseWindow             : _XDisplay-pointer Window -> _int)
+(defx11* XRaiseWindow             : _XDisplay-pointer Window -> _void)
 (defx11* XReadBitmapFile          : _XDisplay-pointer _ulong _string (_ptr i _uint) (_ptr i _uint) (_ptr i _ulong) (_ptr i _int) (_ptr i _int) -> _int)
 (defx11* XReadBitmapFileData      : _string (_ptr i _uint) (_ptr i _uint) _pointer (_ptr i _int) (_ptr i _int) -> _int)
 (defx11* XRebindKeysym            : _XDisplay-pointer _ulong (_ptr i _ulong) _int (_ptr i _ubyte) _int -> _int)
