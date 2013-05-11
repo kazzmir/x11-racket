@@ -1,9 +1,9 @@
 #lang racket/base
 
-(require "../x11.rkt"
-         "../x11-xpm.rkt"
-         "../fd.rkt"
-         "../keysymdef.rkt"
+(require x11/x11
+         x11/x11-xpm
+         x11/fd
+         x11/keysymdef
          ffi/unsafe
          racket/list
          racket/math
