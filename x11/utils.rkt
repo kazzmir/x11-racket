@@ -1,7 +1,8 @@
-#lang scheme
+#lang racket/base
 
-(require scheme/foreign
-         (for-syntax racket/syntax))
+(require ffi/unsafe
+         (for-syntax racket/base
+                     racket/syntax))
 (provide (all-defined-out))
 
 (define-syntax define*
@@ -11,8 +12,7 @@
             (provide name))]
     [(_ name val)
      (begin (define name val)
-            (provide name))])
-  )
+            (provide name))]))
 
 (define-for-syntax (format-syntax str . args)
     (apply format str
@@ -25,16 +25,7 @@
 (define-syntax (define-cstruct* stx)
   (syntax-case stx ()
     ((_ name ((field type) ...))
-     (with-syntax (#;((provides ...)
-                    (map (lambda (field)
-                           (datum->syntax
-                             field
-                             (string->symbol
-                               (substring
-                                 (format-syntax "~a-~a" #'name field)
-                                 1))))
-                         (syntax->list #'(field ...))))
-                   (id (datum->syntax #'name
+     (with-syntax ((id (datum->syntax #'name
                                       (string->symbol
                                        (substring
                                         (format-syntax "~a" #'name)
@@ -64,5 +55,4 @@
      #'(begin
          (define-cstruct* name1 rest)
          (define-cstructs* (names ...) rest)))))
-
 
