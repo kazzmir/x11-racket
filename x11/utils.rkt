@@ -1,6 +1,7 @@
 #lang scheme
 
-(require scheme/foreign)
+(require scheme/foreign
+         (for-syntax racket/syntax))
 (provide (all-defined-out))
 
 (define-syntax define*
@@ -38,6 +39,8 @@
                                        (substring
                                         (format-syntax "~a" #'name)
                                         1))))
+                   (name-pointer (format-id #'name "~a-pointer" #'name))
+                   (name-pointer/null (format-id #'name "~a-pointer/null" #'name))
                    (->list* (datum->syntax #'name
                                            (string->symbol
                                             (substring
@@ -50,7 +53,8 @@
                                            1)))))
        #'(begin
            (define-cstruct name ((field type) ...))
-	     (provide (struct-out id) ->list* tag)))))) ; useful for match
+           (provide name name-pointer name-pointer/null)
+	   (provide (struct-out id) ->list* tag)))))) ; useful for match
 
 (define-syntax (define-cstructs* stx)
   (syntax-case stx ()
