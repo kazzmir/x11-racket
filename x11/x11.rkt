@@ -2460,7 +2460,7 @@ int count;		/* defines range of change w. first_keycode*/
 
 (defx11* XCheckMaskEvent           : _XDisplay-pointer _long _XEvent-pointer -> _int)
 ;(defx11* XCheckTypedEvent         : _XDisplay-pointer _int _XEvent-pointer -> _int)
-(defx11* XCheckTypedEvent          : _XDisplay-pointer EventType _XEvent-pointer -> _int)
+(defx11* XCheckTypedEvent          : _XDisplay-pointer EventType _XEvent-pointer -> _bool)
 (defx11* XCheckTypedWindowEvent    : _XDisplay-pointer Window EventType _XEvent-pointer -> _int)
 (defx11* XCheckWindowEvent         : _XDisplay-pointer Window _long _XEvent-pointer -> _int)
 (defx11* XCirculateSubwindows      : _XDisplay-pointer Window _int -> _int)
