@@ -1,3 +1,5 @@
 These files contain a set of FFI bindings to x11.
 
 To install: 'raco pkg install x11'
+
+Please note that there may remain a number of bindings that require some more work.
