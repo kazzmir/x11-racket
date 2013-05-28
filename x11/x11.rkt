@@ -1790,16 +1790,7 @@ int count;		/* defines range of change w. first_keycode*/
    (data : (_ptr o _pointer))
    -> (res : _bool) ; returns Success if all ok
    -> (values data count))
-  
-  ;; TODO: This procedure should be used in many places!
-  ;; (instead of rewriting it each time)
-  ;; (wait, couldn't we free the data just after the cblock->list operation? Or is the data still used somehow?)
-  (define (cblock->list/finalizer data type count [free XFree])
-    (define data-list (cblock->list data type count))
-    (register-finalizer data-list (λ(data-list)(free data)))
-    data-list)
-  ; TODO: Do the same with vector?
-  
+    
   ;; Same as XGetWindowProperty but returns a list of values of type return-data-type
   (define* (GetWindowProperty dpy window property req-type return-data-type)
     ;; long-length=-1 so that actual_length returns the true, untruncated value
@@ -1948,9 +1939,7 @@ int count;		/* defines range of change w. first_keycode*/
     (children : (_ptr o _pointer))
     (nchildren : (_ptr o _int))
     -> Status
-    -> (let ([out (cblock->list children Window nchildren)])
-         (register-finalizer out (λ(out)(XFree children)))
-         out))
+    -> (cblock->list/finalizer children Window nchildren XFree))
 
   (defx11* XSetErrorHandler : (_fun _XDisplay-pointer _XErrorEvent-pointer -> _int) -> _void)
 
@@ -2097,9 +2086,7 @@ int count;		/* defines range of change w. first_keycode*/
   ;; listof(_char)
   (defx11* XFetchBytes : _XDisplay-pointer (bytes : (_ptr o _int))
     -> (data : _pointer)
-    -> (let ((l (cblock->list data _byte _bytes)))
-         (register-finalizer l (λ(l)(XFree data)))
-         l))
+    -> (cblock->list/finalizer data _byte _bytes XFree))
 
   ;; fix
   (defx11* XFetchName : _XDisplay-pointer Window (_ptr o _string) -> Status)
@@ -2354,8 +2341,7 @@ int count;		/* defines range of change w. first_keycode*/
   InputType _Visual-pointer/null ChangeWindowAttributes _XSetWindowAttributes-pointer/null 
   -> Window)
 
-;; All these probably need to be fixed using cblock->list and a finalizer
-;; TODO: a function to abstract the finalizer and the conversion to list/vector, for ease of use and minimizing bug risk.
+;; All these probably need to be fixed using cblock->list/finalizer
 (defx11* XListInstalledColormaps   : _XDisplay-pointer _ulong (_ptr i _int) -> (_ptr i _ulong))
 (defx11* XListFonts                : _XDisplay-pointer _string _int (_ptr i _int) -> (_ptr i _string))
 (defx11* XListFontsWithInfo        : _XDisplay-pointer _string _int (_ptr i _int) _pointer -> (_ptr i _string))
@@ -2364,9 +2350,7 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XListProperties           : _XDisplay-pointer Window (count : (_ptr o _int)) 
   -> (atoms : _pointer)
   -> (if atoms
-         (let ([out (cblock->list atoms Atom count)])
-           (register-finalizer out (λ(out)(XFree atoms)))
-           out)
+         (cblock->list/finalizer atoms Atom count XFree)
          '()))
 
 (defx11* XListHosts                : _XDisplay-pointer (_ptr i _int) (_ptr i _int) -> _XHostAddress-pointer)
@@ -2416,9 +2400,7 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XGetWMProtocols : _XDisplay-pointer Window (atoms : (_ptr o _pointer)) (count : (_ptr o _int)) 
   -> (status : Status)
   -> (and status
-          (let ([out (cblock->list atoms Atom count)])
-            (register-finalizer out (λ(out)(XFree atoms)))
-            out)))
+          (cblock->list/finalizer atoms Atom count XFree)))
 
 (defx11* XIconifyWindow            : _XDisplay-pointer Window _int -> _int)
 (defx11* XWithdrawWindow           : _XDisplay-pointer Window _int -> _int)
@@ -2812,9 +2794,7 @@ int count;		/* defines range of change w. first_keycode*/
   _XTextProperty-pointer (lstr : (_ptr o _pointer)) (count : (_ptr o _int))
   -> (status : Status)
   -> (and status
-          (let ([out (cblock->list lstr _string count)])
-            (register-finalizer out (λ(out)(XFreeStringList lstr)))
-            out)))
+          (cblock->list lstr _string count XFreeStringList)))
 ; Status XTextPropertyToStringList(text_prop, list_return, count_return)
 ;       XTextProperty *text_prop;
 ;       char ***list_return;

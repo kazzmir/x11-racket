@@ -56,3 +56,13 @@
          (define-cstruct* name1 rest)
          (define-cstructs* (names ...) rest)))))
 
+;; Register-finalizer wrapper, to avoid argument problems and code duplication
+(define (c->racket/register-finalizer c->racket c-pointer free)
+  (register-finalizer c->racket (λ(c->racket)(free c-pointer)))
+  c->racket)
+
+;; (wait, couldn't we free the data just after the cblock->list operation?
+;; Or is the data still used somehow?)
+(define (cblock->list/finalizer data type count free)
+  (c->racket/register-finalizer (cblock->list data type count) data free))
+; TODO: Do the same with vector?

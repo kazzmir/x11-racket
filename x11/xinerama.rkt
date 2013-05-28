@@ -110,7 +110,7 @@ Status returned is Success for all okay. |#
         -> (screen-infos : _pointer)
         -> (and (not (zero? number))
                 (let ([out (cblock->vector screen-infos _XineramaScreenInfo number)])
-                  (register-finalizer screen-infos XFree)
+                  (register-finalizer out (λ(out)(XFree screen-infos)))
                   out))))
 
 ;;; The following functions seem to be specific to version (1 2)
@@ -160,7 +160,7 @@ BadAlloc for memory allocation failure. |#
         -> (status : Status)
         -> (and status
                 (let ([out (cblock->vector frame-buffer-rects _XRectangle number-frame-buffers)])
-                  (register-finalizer out XFree)
+                  (register-finalizer out (λ(out)(XFree frame-buffer-rects)))
                   out))))
 
 #|
