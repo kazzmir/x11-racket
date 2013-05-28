@@ -2,7 +2,7 @@
 
 (require (lib "foreign.ss")) (unsafe!)
 (require "x11.rkt" "utils.rkt")
-  
+
 (define libxinput (ffi-lib "libXi"))
 
 (define-syntax defxi
@@ -30,7 +30,7 @@
     (_enum '(KeyClass = 0
              ButtonClass = 1
              ValuatorClass = 2
-             FeedbackClass = 3 
+             FeedbackClass = 3
              ProximityClass = 4
              FocusClass = 5
              OtherClass = 6)
@@ -108,7 +108,7 @@
            out))
 
 (define dont-care
-  (list 
+  (list
     XListInputDevices XFreeDeviceList
     XQueryDeviceState XOpenDevice
     ))
