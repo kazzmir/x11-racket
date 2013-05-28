@@ -13,10 +13,10 @@
 (define (IsPrivateKeypadKey keysym)
   (and (keysym . >= . #x11000000) (keysym . <= . #x1100FFFF)))
 
-(define (IsCursorKey keysym) 
+(define (IsCursorKey keysym)
   (and (keysym . >= . XK-Home) (keysym . < . XK-Select)))
 
-(define (IsPFKey keysym) 
+(define (IsPFKey keysym)
   (and (keysym . >= . XK-KP-F1) (keysym . <= . XK-KP-F4)))
 
 (define (IsFunctionKey keysym)

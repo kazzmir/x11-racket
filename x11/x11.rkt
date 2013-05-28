@@ -15,7 +15,7 @@
          ffi/unsafe
          ffi/unsafe/cvector
          (only-in '#%foreign ctype-c->scheme ctype-scheme->c)
-         "fd.rkt" 
+         "fd.rkt"
          "utils.rkt"
          ;"keysymtype.rkt"
          rackunit
@@ -106,10 +106,10 @@
 ;; We should make a guarded/wrapped ctype
 ;; to check for failures.
 (define* Status
-  (make-ctype _int 
+  (make-ctype _int
               (λ(status)(or status 0))
               (λ(status)
-                (if-debug 
+                (if-debug
                  (when (= 0 status)
                    (x11-dprintf "Warning: status is 0.\n"))
                  #f)
@@ -120,7 +120,7 @@
   (get-ffi-obj '_Xdebug libx11 _bool))
 (define* (set-Xdebug! b)
   (set-ffi-obj! '_Xdebug libx11 _bool b))
-  
+
   (define* Pixel _ulong)
   (define* XID _ulong)
   (define* Time _ulong)
@@ -138,7 +138,7 @@
   (define* XrmQuark _int)
   ;(define* Window XID)
   ; null windows are turned into #f
-  (define* Window 
+  (define* Window
     (make-ctype XID
                 (λ(w)(or w None)) ; scheme->c
                 (λ(w)(and (not (= None w)) w)) ; c->scheme
@@ -223,20 +223,20 @@
           ; in case the incoming number is not recognized, just return it as is.
           ; This is useful for the ctype Atom.
           #:unknown values))
-  
+
   ;; Converts an atom symbol to a _uint number
   (define* (atom-symbol->number atom)
     ((ctype-scheme->c AtomProperty) atom))
-  
+
   ;; Converts an atom (symbol or number) to an atom number
   (define* (atom->number atom)
     (if (symbol? atom)
         (atom-symbol->number atom)
         atom))
-  
+
   ;; Like AtomProperty, but accepts numbers as input too.
   ;; To convert the numbers into strings, use XGetAtomName(s)
-  (define* Atom 
+  (define* Atom
     (make-ctype _ulong
                 atom->number
                 (λ(v)((ctype-c->scheme AtomProperty) v))
@@ -291,7 +291,7 @@
 		Mod1Mask     = #b0000000001000 ; Alt/meta
 		Mod2Mask     = #b0000000010000 ; NumLock
 		Mod3Mask     = #b0000000100000 ; Super
-		Mod4Mask     = #b0000001000000 ; 
+		Mod4Mask     = #b0000001000000 ;
 		Mod5Mask     = #b0000010000000 ; AltGr
 		Button1Mask  = #b0000100000000
 		Button2Mask  = #b0001000000000
@@ -299,8 +299,8 @@
 		Button4Mask  = #b0100000000000
 		Button5Mask  = #b1000000000000
 		Any          = #x8000)))
-  
-  (define* keyboard-modifiers 
+
+  (define* keyboard-modifiers
     #(ShiftMask  LockMask  ControlMask  Mod1Mask  Mod2Mask  Mod3Mask  Mod4Mask  Mod5Mask))
 
 
@@ -345,7 +345,7 @@
                 Colormap         = #b010000000000000
                 Cursor           = #b100000000000000)
               _ulong))
-  
+
   (define GCAttributes
     (_bitmask '(Function          =    #b00000000000000000000001
                 PlaneMask         =    #b00000000000000000000010
@@ -433,16 +433,16 @@
              LASTEvent = 35)))
 
   ;;; Some constants
-  
+
   (define* CopyFromParent #f)
   (define* CopyFromParent/int 0)
   (define* None 0)
   (define* (None? x) (or (not x) (equal? x None))) ; sometimes the null pointer is turned into #f, sometimes into 0?
-  
+
   (define* CurrentTime 0);(get-ffi-obj 'CurrentTime libx11 _long)) ; nope...
-  
+
   (define* PointerRoot 1)
-  
+
   (define* RevertTo
     (_bitmask `(RevertToNone = 0
                 RevertToPointerRoot = 1
@@ -488,13 +488,13 @@
              AsyncBoth
              SyncBoth
              )))
-  
+
   ;; for XChangeProperty
   (define PropMode
     (_enum '(PropModeReplace
              PropModePrepend
              PropModeAppend)))
-  
+
 
     #|
   typedef struct {
@@ -526,7 +526,7 @@
      (max-height _int)
      (width-inc _int)
      (height-inc _int)))
-  
+
   (define-cstruct _XGC
     ((ext-data _pointer)
      (gid GContext)))
@@ -537,7 +537,7 @@
 	  	short x, y;
 		} XTimeCoord;
 		|#
-  
+
   (define-cstruct _XTimeCoord
 		  ((time Time)
 		   (x _short)
@@ -701,7 +701,7 @@ Display,
   ;; Explanation: (Laurent Orseau -- 2012-10-27)
   ;; XEvent is defined as a union (of XKeyPressedEvent, XButtonPressedEvent, etc.) in Xlib.h,
   ;; but there is (yet) nothing exactly equivalent in Racket (except _union which is not perfect).
-  ;; The idea here is simple though: 
+  ;; The idea here is simple though:
   ;; The type of a pointer as considered by Racket is checked with its cpointer-tag list,
   ;; Further down this file, the XNextEvent* procedure adds the correct tag to the list,
   ;; depending on the received event (and returns the event).
@@ -713,7 +713,7 @@ Display,
 
   ;; more laziness
   ;; Instead of making the union of all the possible event types,
-  ;; we just create an empty event of the maximum size and 
+  ;; we just create an empty event of the maximum size and
   ;; then turn it into the correct type using pointer-tag.
   ;; tag can be any XEvent* type
   (define (make-dummy-XEvent [tag #f])
@@ -726,7 +726,7 @@ Display,
         (cpointer-push-tag! s tag))
       s))
   (provide XEvent-type make-XEvent XEvent->list* make-dummy-XEvent)
-  
+
   (define-cstruct* _XExposeEvent
     ((type EventType)
      (serial _ulong)
@@ -969,7 +969,7 @@ Bool same_screen;	/* same screen flag */
      (x _int)
      (y _int)))
 
-  
+
   (define-cstruct* _XResizeRequestEvent
     ((type EventType)
      (serial _ulong)
@@ -1078,7 +1078,7 @@ Bool same_screen;	/* same screen flag */
                    (_array _int16 10)
                    (_array _int32 5)))
      ))
-  
+
   ;; Laurent Orseau -- 2012-10-27
   ;; It's not really an XEvent?
   (define-cstruct* _XErrorEvent
@@ -1191,7 +1191,7 @@ Colormap colormap;		/* color map to be associated with window */
 Cursor cursor;		/* cursor to be displayed (or None) */
 } XSetWindowAttributes;
 |#
-  
+
   (define* ParentRelative 1)
 
   (define-cstruct _XSetWindowAttributes
@@ -1509,7 +1509,7 @@ Window sibling;
 int stack_mode;
 } XWindowChanges;
 |#
-  
+
   (define-cstruct _XWindowChanges
 		  ((x _int)
 		   (y _int)
@@ -1751,12 +1751,12 @@ int count;		/* defines range of change w. first_keycode*/
 			    0 0 #f 0
 			    0 0 0 0
 			    0 0 #f 0 #f
-			    'IsUnmapped 
+			    'IsUnmapped
 			    0 0 0 #f #f))
   (provide (except-out (struct-out XWindowAttributes) make-XWindowAttributes)
            (rename-out (make-dummy-attributes make-XWindowAttributes)))
   #;
-  (provide XWindowAttributes-save-under XWindowAttributes-map-state 
+  (provide XWindowAttributes-save-under XWindowAttributes-map-state
 	   XWindowAttributes-width
 	   XWindowAttributes-height
 	   (rename make-dummy-attributes make-XWindowAttributes))
@@ -1776,7 +1776,7 @@ int count;		/* defines range of change w. first_keycode*/
 
   (defx11* XInternAtom : _XDisplay-pointer _string _bool -> Atom)
 
-  ;; TODO: 
+  ;; TODO:
   ;; - Currently, does only a subset of what it is supposed to do.
   ;; - The data should be freed with XFree().
   ;; See: http://tronche.com/gui/x/xlib/window-information/XGetWindowProperty.html
@@ -1790,13 +1790,13 @@ int count;		/* defines range of change w. first_keycode*/
    (data : (_ptr o _pointer))
    -> (res : _bool) ; returns Success if all ok
    -> (values data count))
-    
+
   ;; Same as XGetWindowProperty but returns a list of values of type return-data-type
   (define* (GetWindowProperty dpy window property req-type return-data-type)
     ;; long-length=-1 so that actual_length returns the true, untruncated value
     (define-values (data count) (XGetWindowProperty dpy window property 0 -1 #f req-type))
     (and data (cblock->list/finalizer data return-data-type count)))
-  
+
   ;; Return &(display->screens[screen])
   (define (screen-of-display display screen)
     (ptr-ref (XDisplay-screens display) _Screen screen))
@@ -1832,8 +1832,8 @@ int count;		/* defines range of change w. first_keycode*/
 
   (defx11* (AllocNamedColor display screen name default)
 	     (let-values (((ret screen-color exact-color)
-			       (XAllocNamedColor display 
-						 (DefaultColorMap display screen) 
+			       (XAllocNamedColor display
+						 (DefaultColorMap display screen)
 						 name)))
                (if (not (= 0 ret))
 		 (XColor-pixel screen-color)
@@ -1872,10 +1872,10 @@ int count;		/* defines range of change w. first_keycode*/
       ; I can't find where it comes from...
       ; (same with XPeekEvent)
       ;(printf "e: ~a\n" e) ; is it null ? ; No crash when I print e?!
-      
+
       ;(XIfEvent display e (thunk* #t) #f) ; TEST
       (XNextEvent display e)
-      
+
       ;(printf "Ok.\n")(flush-output)
       ;(printf "Pushing XAnyEvent tag... ")(flush-output)
       (cpointer-push-tag! e XAnyEvent-tag)
@@ -1933,7 +1933,7 @@ int count;		/* defines range of change w. first_keycode*/
 
   ;; Return a list of int's( Window ids )
   (defx11* XQueryTree :
-    _XDisplay-pointer Window 
+    _XDisplay-pointer Window
     (f1 : (_ptr o Window)) ;; dont care
     (f2 : (_ptr o Window)) ;; dont care
     (children : (_ptr o _pointer))
@@ -1956,7 +1956,7 @@ int count;		/* defines range of change w. first_keycode*/
 	   _XDisplay-pointer _XGC-pointer _ulong -> _int)
 
   (defx11* XPointInRegion : _XRegion-pointer _int _int -> _bool)
-  
+
   (defx11* XUnionRectWithRegion :
 	   _XRectangle-pointer _XRegion-pointer _XRegion-pointer
 	   -> _int)
@@ -1982,7 +1982,7 @@ int count;		/* defines range of change w. first_keycode*/
   (defx11* XFillRectangle :
 	   _XDisplay-pointer Drawable _XGC-pointer _int _int _uint _uint -> _int)
 
-  (defx11* XRectInRegion : 
+  (defx11* XRectInRegion :
 	   _XRegion-pointer _int _int _uint _uint -> RectangleRegion)
 
   (defx11* XCopyGC :
@@ -2011,7 +2011,7 @@ int count;		/* defines range of change w. first_keycode*/
   (defx11* XESetWireToError : _XDisplay-pointer _int (_fun _void -> _bool)
 	   -> _bool)
 
-  (defx11* XSetClipRectangles : _XDisplay-pointer _XGC-pointer 
+  (defx11* XSetClipRectangles : _XDisplay-pointer _XGC-pointer
 	   _int _int
 	   (_list i _XRectangle) _int _int -> _int)
 
@@ -2072,7 +2072,7 @@ int count;		/* defines range of change w. first_keycode*/
   (defx11* XFetchBuffer : _XDisplay-pointer (bytes : (_ptr o _int)) _int ->
 	   (data : _pointer) -> (values bytes data))
 
-  (defx11 XSetFontPath : _XDisplay-pointer _pointer _int -> _int) 
+  (defx11 XSetFontPath : _XDisplay-pointer _pointer _int -> _int)
   (provide (rename-out (XSetFontPath-user XSetFontPath)))
   ;; paths is list-of(string)
   ;; (XSetFontPath some-display '("dir1" "dir2"))
@@ -2259,7 +2259,7 @@ int count;		/* defines range of change w. first_keycode*/
      (XGetErrorText display code str length)
      (define len (for/or ([i length]) (and (= (ptr-ref str _byte i) 0) i)))
      (make-sized-byte-string str len)))
- 
+
   (defx11* XSetWMNormalHints : _XDisplay-pointer Window _XSizeHints-pointer -> _void)
 
   (provide (rename-out [XGetFontPath-user XGetFontPath]))
@@ -2305,12 +2305,12 @@ int count;		/* defines range of change w. first_keycode*/
                             (XModifierKeymap-max-keypermod keymap))))
     ))
 ;Test:
-#;(begin 
+#;(begin
     (define d (XOpenDisplay ":0"))
     (define k (XGetModifierMapping d))
     (define mods (XModifierKeymap->vector k)
     (XFreeModifiermap k)))
-           
+
 (defx11* XInsertModifiermapEntry  : _XModifierKeymap-pointer _ubyte _int -> _XModifierKeymap-pointer)
 (defx11* XNewModifiermap          : _int -> _XModifierKeymap-pointer)
 (defx11* XCreateImage             : _XDisplay-pointer _Visual-pointer _uint _int _int _string _uint _uint _int _int -> _XImage-pointer)
@@ -2337,8 +2337,8 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XGetSelectionOwner           : _XDisplay-pointer _ulong -> Window)
 
 (defx11* XCreateWindow :
-  _XDisplay-pointer Window (x : _int) (y : _int) (width : _uint) (height : _uint) (border-width : _uint) (depth : _int) 
-  InputType _Visual-pointer/null ChangeWindowAttributes _XSetWindowAttributes-pointer/null 
+  _XDisplay-pointer Window (x : _int) (y : _int) (width : _uint) (height : _uint) (border-width : _uint) (depth : _int)
+  InputType _Visual-pointer/null ChangeWindowAttributes _XSetWindowAttributes-pointer/null
   -> Window)
 
 ;; All these probably need to be fixed using cblock->list/finalizer
@@ -2347,7 +2347,7 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XListFontsWithInfo        : _XDisplay-pointer _string _int (_ptr i _int) _pointer -> (_ptr i _string))
 (defx11* XListExtensions           : _XDisplay-pointer (_ptr i _int) -> (_ptr i _string))
 
-(defx11* XListProperties           : _XDisplay-pointer Window (count : (_ptr o _int)) 
+(defx11* XListProperties           : _XDisplay-pointer Window (count : (_ptr o _int))
   -> (atoms : _pointer)
   -> (if atoms
          (cblock->list/finalizer atoms Atom count XFree)
@@ -2397,7 +2397,7 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XReconfigureWMWindow        : _XDisplay-pointer _ulong _int _uint _XWindowChanges-pointer -> _int)
 
 ;@@ GetWMProtocols
-(defx11* XGetWMProtocols : _XDisplay-pointer Window (atoms : (_ptr o _pointer)) (count : (_ptr o _int)) 
+(defx11* XGetWMProtocols : _XDisplay-pointer Window (atoms : (_ptr o _pointer)) (count : (_ptr o _int))
   -> (status : Status)
   -> (and status
           (cblock->list/finalizer atoms Atom count XFree)))
@@ -2500,13 +2500,13 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XGrabButton : _XDisplay-pointer _uint Modifiers Window _bool InputMask GrabMode GrabMode Window Cursor -> _void)
 ;(defx11* XGrabKey : _XDisplay-pointer _int _uint _ulong _int _int _int -> _int)
 (defx11* XGrabKey : _XDisplay-pointer _int Modifiers Window _bool GrabMode GrabMode -> _void)
-; can generate BadAccess , BadValue , and BadWindow errors. 
+; can generate BadAccess , BadValue , and BadWindow errors.
 (defx11* XGrabKeyboard : _XDisplay-pointer _ulong _int _int _int _ulong -> _int)
 ;@@ XGrabPointer
 (define xgrabpointer-return-code #(GrabSuccess AlreadyGrabbed GrabInvalidTime GrabNotViewable GrabFrozen))
-(defx11* XGrabPointer : _XDisplay-pointer Window _bool InputMask GrabMode GrabMode Window Cursor Time 
+(defx11* XGrabPointer : _XDisplay-pointer Window _bool InputMask GrabMode GrabMode Window Cursor Time
   -> (ret : _int)
-  -> (if-debug (begin (when (> ret 0) 
+  -> (if-debug (begin (when (> ret 0)
                         (x11-dprintf "Error: XGrabPointer failed with code ~a: ~a\n" ret
                                      (vector-ref xgrabpointer-return-code ret)))
                       ret)
@@ -2605,10 +2605,10 @@ int count;		/* defines range of change w. first_keycode*/
   (set-XClientMessageEvent-window!        event window)
   (set-XClientMessageEvent-message-type!  event msg-type)
   (set-XClientMessageEvent-format!        event format)
-  
+
   (define data (XClientMessageEvent-data event))
-  (define vec (union-ref 
-               data 
+  (define vec (union-ref
+               data
                (case format [(8) 0] [(16) 1] [(32) 2]
                  [else (error "Wrong format ~a; must be 8, 16 or 32" format)])))
   ; fills the vector with the list and filles the remaining elements with 0
@@ -2621,8 +2621,8 @@ int count;		/* defines range of change w. first_keycode*/
 (define* (ClientMessage-data/vector client-event)
   (define data (XClientMessageEvent-data client-event))
   (define format (XClientMessageEvent-format client-event))
-  (define vec (union-ref 
-               data 
+  (define vec (union-ref
+               data
                (case format [(8) 0] [(16) 1] [(32) 2])))
   (for/vector ([i (array-length vec)])
     (array-ref vec i)))
@@ -2635,11 +2635,11 @@ int count;		/* defines range of change w. first_keycode*/
      (take (vector->list (ClientMessage-data/vector event))
            (length lvalues))
      lvalues))
-  
+
   (check-client-data '(1 2 3) 32)
   (check-client-data '(1 2 3) 16)
   (check-client-data '(1 2 3) 8)
-  
+
   (void (XCloseDisplay dpy))
   )
 
@@ -2787,10 +2787,10 @@ int count;		/* defines range of change w. first_keycode*/
 
 (defx11* XGetVisualInfo : _XDisplay-pointer _long _XVisualInfo-pointer (_ptr i _int) -> _XVisualInfo-pointer)
 
-(defx11* XGetWMClientMachine : _XDisplay-pointer Window _XTextProperty-pointer -> Status) 
+(defx11* XGetWMClientMachine : _XDisplay-pointer Window _XTextProperty-pointer -> Status)
 
 ;@@ XTextPropertyToStringList
-(defx11* XTextPropertyToStringList : 
+(defx11* XTextPropertyToStringList :
   _XTextProperty-pointer (lstr : (_ptr o _pointer)) (count : (_ptr o _int))
   -> (status : Status)
   -> (and status
@@ -2805,7 +2805,7 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XGetWMIconName          : _XDisplay-pointer Window _XTextProperty-pointer -> _int)
 (defx11* XAllocClassHint         : -> _XClassHint-pointer)
 ;(defx11* XGetWMName              : _XDisplay-pointer Window _XTextProperty-pointer -> _int) ; -> _bool ? or even #f or a XTexProperty data?
-(defx11* XGetWMName              : _XDisplay-pointer Window (prop : (_ptr o _XTextProperty)) -> (status : Status) 
+(defx11* XGetWMName              : _XDisplay-pointer Window (prop : (_ptr o _XTextProperty)) -> (status : Status)
   -> (and status prop))
 (defx11* XGetWMNormalHints       : _XDisplay-pointer Window _XSizeHints-pointer (_ptr i _long) -> _int)
 (defx11* XGetWMSizeHints         : _XDisplay-pointer Window _XSizeHints-pointer (_ptr i _long) _ulong -> _int)
@@ -2848,9 +2848,9 @@ int count;		/* defines range of change w. first_keycode*/
   ;; defined somewhere above
 (module+ main
   (require "keysym-util.rkt")
-  
+
   (define not-used
-  (list 
+  (list
     XAllPlanes  	 XESetWireToError  	 XSetClipRectangles
     XBitmapBitOrder 	XESetWireToEvent 	XSetCloseDownMode
     XBitmapPad 	XEmptyRegion 	XSetCommand
@@ -2858,7 +2858,7 @@ int count;		/* defines range of change w. first_keycode*/
     BlackPixel 	XEqualRegion 	XSetErrorHandler
     BlackPixelOfScreen 	#;XEventMaskOfScreen
     XSetFillRule
-    #;CellsOfScreen 
+    #;CellsOfScreen
     XEventsQueued 	XSetFillStyle
     #;XcmsClientWhitePointOfCCC
     XExtendedMaxRequestSize 	XSetFont
@@ -2868,109 +2868,109 @@ int count;		/* defines range of change w. first_keycode*/
     XDefaultDepth 	XFillArc 	XSetGraphicsExposures
     XFillArcs 	XSetIOErrorHandler
     XDefaultGC 	XFillPolygon 	XSetIconName
-    #;DefaultGCOfScreen 
+    #;DefaultGCOfScreen
     XFillRectangle 	XSetIconSizes
-    #;DefaultRootWindow 
+    #;DefaultRootWindow
     XFillRectangles 	XSetInputFocus
     DefaultScreen 	DefaultDepth DefaultVisual
     XFindContext 	XSetLineAttributes
-    #;DefaultScreenOfDisplay 
+    #;DefaultScreenOfDisplay
     XFlush 	XSetModifierMapping
-    #;DefaultVisual 	
+    #;DefaultVisual
     XFlushGC 	XSetNormalHints
-    #;DefaultVisualOfScreen 	
+    #;DefaultVisualOfScreen
     XForceScreenSaver 	XSetPlaneMask
-    #;DisplayCells 	
+    #;DisplayCells
     XFree 	XSetPointerMapping
-    DisplayHeight 	XFreeColormap 	
+    DisplayHeight 	XFreeColormap
     #;XSetProperty
-    #;DisplayHeightMM 	
+    #;DisplayHeightMM
     XFreeColors 	XSetRGBColormaps
-    #;DisplayOfCCC 
+    #;DisplayOfCCC
     XFreeCursor 	XSetRGBColormaps
-    #;DisplayOfScreen 	
+    #;DisplayOfScreen
     XFreeExtensionList 	XSetRegion
-    #;DisplayPlanes 	
+    #;DisplayPlanes
     XFreeFont 	XSetScreenSaver
-    #;DisplayString 	
+    #;DisplayString
     XFreeFontInfo 	XSetSelectionOwner
     DisplayWidth 	XFreeFontNames 	XSetSizeHints
-    #;DisplayWidthMM 
+    #;DisplayWidthMM
     XFreeFontPath 	XSetStandardColormap
-    #;DoesBackingStore 	
+    #;DoesBackingStore
     XFreeGC 	XSetStandardProperties
-    #;DoesSaveUnders	
+    #;DoesSaveUnders
     XFreeModifiermap 	XSetState
-    #;EventMaskOfScreen 	
+    #;EventMaskOfScreen
     XSetStipple
-    #;HeightMMOfScreen 	
+    #;HeightMMOfScreen
     XFreePixmap 	XSetSubwindowMode
-    #;HeightOfScreen 	
+    #;HeightOfScreen
     XFreeStringList 	XSetTSOrigin
-    #;ImageByteOrder 
+    #;ImageByteOrder
     XGContextFromGC 	XSetTextProperty
-    #;InitExtension 
+    #;InitExtension
     XGeometry 	XSetTile
     IsCursorKey 	; see keysym-util.rkt
     XGetAtomName 	XSetTransientForHint
-    IsFunctionKey 	
+    IsFunctionKey
     XGetAtomNames 	XSetWMClientMachine
-    IsKeypadKey 	
+    IsKeypadKey
     XGetClassHint 	XSetWMColormapWindows
-    IsMiscFunctionKey 	
+    IsMiscFunctionKey
     XGetCommand 	XSetWMHints
-    IsModifierKey 	
+    IsModifierKey
     XGetDefault 	XSetWMIconName
-    IsPFKey 	
+    IsPFKey
     XGetErrorDatabaseText 	XSetWMName
-    IsPrivateKeypadKey 	
+    IsPrivateKeypadKey
     XGetErrorText 	XSetWMNormalHints
-    #;LastKnownRequestProcessed 	
-    XGetFontPath 	
+    #;LastKnownRequestProcessed
+    XGetFontPath
     XGetFontProperty 	XSetWMProtocols
-    #;MinCmapsOfScreen 	
+    #;MinCmapsOfScreen
     XGetGCValues 	XSetWMSizeHints
-    #;NextRequest 
+    #;NextRequest
     XGetGeometry 	XSetWindowBackground
-    #;PlanesOfScreen 	
+    #;PlanesOfScreen
     XGetIconName 	XSetWindowBackgroundPixmap
-    #;ProtocolRevision 	
+    #;ProtocolRevision
     XGetIconSizes 	XSetWindowBorder
-    #;ProtocolVersion 	
+    #;ProtocolVersion
     XGetImage 	XSetWindowBorderPixmap
-    #;QLength 	
+    #;QLength
     XGetInputFocus 	XSetWindowBorderWidth
     RootWindow 	XGetKeyboardControl 	XSetWindowColormap
-    #;RootWindowOfScreen 	
+    #;RootWindowOfScreen
     XGetKeyboardMapping 	XSetZoomHints
-    #;ScreenCount 	
+    #;ScreenCount
     XGetModifierMapping 	XShrinkRegion
-    #;ScreenNumberOfCCC 	
+    #;ScreenNumberOfCCC
     XGetMotionEvents 	XStoreBuffer
-    #;ScreenWhitePointOfCCC 	
+    #;ScreenWhitePointOfCCC
     XGetNormalHints 	XStoreBytes
-    #;ScreensOfDisplay 	
+    #;ScreensOfDisplay
     XGetPixel 	XStoreColor
-    #;ServerVendor 	
+    #;ServerVendor
     XGetPointerControl 	XStoreColors
-    #;VendorRelease 	
+    #;VendorRelease
     XGetPointerMapping 	XStoreName
-    #;VertexDrawLastPoint 	
+    #;VertexDrawLastPoint
     XGetRGBColormaps 	XStoreNamedColor
-    #;VisualOfCCC 	
+    #;VisualOfCCC
     XGetRGBColormaps 	XStringListToTextProperty
     WhitePixel 	XGetScreenSaver 	XStringToKeysym
-    #;WhitePixelOfScreen 	
+    #;WhitePixelOfScreen
     XGetSelectionOwner 	XSubImage
-    #;WidthMMOfScreen 	
+    #;WidthMMOfScreen
     XGetSizeHints 	XSubtractRegion
-    #;WidthOfScreen 	
-    XGetStandardColormap 	
+    #;WidthOfScreen
+    XGetStandardColormap
     XSync
     XActivateScreenSaver 	XGetSubImage 	XSynchronize
     XAddConnectionWatch 	XGetTextProperty 	XTextExtents
     XAddExtension 	XGetTransientForHint 	XTextExtents16
-    XAddHost 	XGetVisualInfo 
+    XAddHost 	XGetVisualInfo
     XAddHosts 	XGetWMClientMachine 	XTextPropertyToStringList
     XAddPixel 	XGetWMColormapWindows 	XTextWidth
     XAddToSaveSet 	XGetWMHints 	XTextWidth16
@@ -2985,7 +2985,7 @@ int count;		/* defines range of change w. first_keycode*/
     XAllocStandardColormap 	XGetZoomHints 	XUnionRectWithRegion
     XAllocWMHints 	XGrabButton 	XUnionRegion
     XAllowEvents 	XGrabKey 	XUniqueContext
-    #;XAppendVertex 	
+    #;XAppendVertex
     XGrabKeyboard 	XUnloadFont
     XAutoRepeatOff 	XGrabPointer 	XUnlockDisplay
     XAutoRepeatOn 	XGrabServer 	XUnmapSubwindows
@@ -3013,7 +3013,7 @@ int count;		/* defines range of change w. first_keycode*/
     XCirculateSubwindowsDown 	XListExtensions 	#;XcmsCIELabQueryMinL
     XCirculateSubwindowsUp 	XListFonts 	#;XcmsCIELabToCIEXYZ
     XClearArea 	XListFontsWithInfo 	#;XcmsCIELuvQueryMaxC
-    #;XClearVertexFlag 	
+    #;XClearVertexFlag
     XListHosts 	#;XcmsCIELuvQueryMaxL
     XClearWindow 	XListInstalledColormaps 	#;XcmsCIELuvQueryMaxLC
     XClipBox 	XListPixmapFormats 	#;XcmsCIELuvQueryMinL
@@ -3026,7 +3026,7 @@ int count;		/* defines range of change w. first_keycode*/
     XCopyColormapAndFree 	XLookupColor 	#;XcmsCIEuvYToCIEXYZ
     XCopyGC 	XLookupKeysym 	#;XcmsCIEuvYToTekHVC
     XCopyPlane 	XLookupString 	#;XcmsCIExyYToCIEXYZ
-    #;XCreateAssocTable 	
+    #;XCreateAssocTable
     XLowerWindow 	#;XcmsClientWhitePointOfCCC
     XCreateBitmapFromData 	#;XMakeAssoc 	#;XcmsClientWhitePointOfCCC
     XCreateColormap 	XMapRaised 	#;XcmsConvertColors
@@ -3052,13 +3052,13 @@ int count;		/* defines range of change w. first_keycode*/
     XDefaultVisual 	XPending 	#;XcmsSetCCCOfColormap
     XDefaultVisualOfScreen 	XPlanesOfScreen 	#;XcmsSetCompressionProc
     XDefineCursor 	XPointInRegion 	#;XcmsSetWhiteAdjustProc
-    #;XDeleteAssoc 	
+    #;XDeleteAssoc
     XPolygonRegion 	#;XcmsSetWhitePoint
     XDeleteContext 	XProcessInternalConnection 	#;XcmsStoreColor
     XDeleteModifiermapEntry 	XProtocolRevision 	#;XcmsStoreColors
     XDeleteProperty 	XProtocolVersion 	#;XcmsTekHVCQueryMaxC
     XDeleteProperty 	XPutBackEvent 	#;XcmsTekHVCQueryMaxV
-    #;XDestroyAssocTable 	
+    #;XDestroyAssocTable
     XPutImage 	#;XcmsTekHVCQueryMaxVC
     XDestroyImage 	XPutPixel 	#;XcmsTekHVCQueryMaxVSamples
     XDestroyRegion 	XQLength 	#;XcmsTekHVCQueryMinV
@@ -3078,19 +3078,19 @@ int count;		/* defines range of change w. first_keycode*/
     XDisplayWidthMM 	XRaiseWindow 	#;XrmGetResource
     XDoesBackingStore 	XReadBitmapFile 	#;XrmGetStringDatabase
     XDoesSaveUnders 	XReadBitmapFileData 	#;XrmInitialize
-    #;XDraw 	
+    #;XDraw
     XRebindKeysym 	#;XrmLocaleOfDatabase
     XDrawArc 	XRecolorCursor 	#;XrmMergeDatabases
     XDrawArcs 	XReconfigureWMWindow 	#;XrmNameToString
-    #;XDrawDashed 	
+    #;XDrawDashed
     XRectInRegion 	#;XrmParseCommand
-    #;XDrawFilled 	
+    #;XDrawFilled
     XRefreshKeyboardMapping 	#;XrmPermStringToQuark
     XDrawImageString 	XRemoveConnectionWatch 	#;XrmPutFileDatabase
     XDrawImageString16 	XRemoveFromSaveSet 	#;XrmPutLineResource
     XDrawLine 	XRemoveHost 	#;XrmPutResource
     XDrawLines 	XRemoveHosts 	#;XrmPutStringResource
-    #;XDrawPatterned 	
+    #;XDrawPatterned
     XReparentWindow 	#;XrmQGetResource
     XDrawPoint 	XResetScreenSaver 	#;XrmQGetSearchList
     XDrawPoints 	XResizeWindow 	#;XrmQGetSearchResource
@@ -3101,35 +3101,35 @@ int count;		/* defines range of change w. first_keycode*/
     XDrawString16 	XRotateBuffers 	#;XrmSetDataBase
     XDrawText 	XRotateWindowProperties 	#;XrmSetDatabase
     XDrawText16 	XRotateWindowProperties 	#;XrmStringToBindingQuarkList
-    #;XDrawTiled 	
+    #;XDrawTiled
     XSaveContext 	#;XrmStringToClass
-    #;XESetBeforeFlush 	
+    #;XESetBeforeFlush
     XScreenCount 	#;XrmStringToClassList
-    #;XESetCloseDisplay 	
+    #;XESetCloseDisplay
     XScreenNumberOfScreen 	#;XrmStringToName
-    #;XESetCloseDisplay 	
+    #;XESetCloseDisplay
     XScreenResourceString 	#;XrmStringToNameList
-    #;XESetCopyGC 	
+    #;XESetCopyGC
     #;XScreensOfDisplay 	#;XrmStringToQuark
-    #;XESetCreateFont 	
+    #;XESetCreateFont
     XSelectInput 	#;XrmStringToQuarkList
-    #;XESetCreateGC 	
+    #;XESetCreateGC
     XSendEvent 	#;XrmStringToRepresentation
-    #;XESetCreateGC 	
+    #;XESetCreateGC
     XServerVendor 	#;XrmUniqueQuark
-    #;XESetError 	
+    #;XESetError
     XSetAccessControl 	XwcFreeStringList
-    #;XESetErrorString 	
+    #;XESetErrorString
     XSetAfterFunction 	XwcTextListToTextProperty
-    #;XESetEventToWire 	
+    #;XESetEventToWire
     XSetArcMode 	XwcTextPropertyToTextList
-    #;XESetFlushGC 	
+    #;XESetFlushGC
     XSetBackground 	#;_XSetLastRequestRead
-    #;XESetFreeFont 	
+    #;XESetFreeFont
     XSetClassHint 	#;_XSetLastRequestRead
-    #;XESetFreeGC 	
+    #;XESetFreeGC
     XSetClipMask
-    #;XESetPrintErrorValues 	
+    #;XESetPrintErrorValues
     XSetClipOrigin
     XSetWMProperties
 
