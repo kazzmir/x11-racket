@@ -65,4 +65,6 @@
 ;; Or is the data still used somehow?)
 (define (cblock->list/finalizer data type count free)
   (c->racket/register-finalizer (cblock->list data type count) data free))
-; TODO: Do the same with vector?
+
+(define (cblock->vector/finalizer data type count free)
+  (c->racket/register-finalizer (cblock->vector data type count) data free))

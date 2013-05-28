@@ -109,9 +109,7 @@ Status returned is Success for all okay. |#
   (_fun _XDisplay-pointer (number : (_ptr o _int))
         -> (screen-infos : _pointer)
         -> (and (not (zero? number))
-                (let ([out (cblock->vector screen-infos _XineramaScreenInfo number)])
-                  (register-finalizer out (λ(out)(XFree screen-infos)))
-                  out))))
+                (cblock->vector/finalizer screen-infos _XineramaScreenInfo number XFree))))
 
 ;;; The following functions seem to be specific to version (1 2)
 ;;; which I don't have (having '(1 1)).
@@ -159,9 +157,7 @@ BadAlloc for memory allocation failure. |#
   (_fun _XDisplay-pointer Window (frame-buffer-rects : (_ptr o _pointer)) (number-frame-buffers : (_ptr o _int))
         -> (status : Status)
         -> (and status
-                (let ([out (cblock->vector frame-buffer-rects _XRectangle number-frame-buffers)])
-                  (register-finalizer out (λ(out)(XFree frame-buffer-rects)))
-                  out))))
+                (cblock->vector/finalizer frame-buffer-rects _XRectangle number-frame-buffers XFree))))
 
 #|
 Status XineramaGetCenterHint(display, root_window, x,  y)
