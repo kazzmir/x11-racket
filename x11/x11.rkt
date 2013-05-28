@@ -2794,7 +2794,7 @@ int count;		/* defines range of change w. first_keycode*/
   _XTextProperty-pointer (lstr : (_ptr o _pointer)) (count : (_ptr o _int))
   -> (status : Status)
   -> (and status
-          (cblock->list lstr _string count XFreeStringList)))
+          (cblock->list/finalizer lstr _string count XFreeStringList)))
 ; Status XTextPropertyToStringList(text_prop, list_return, count_return)
 ;       XTextProperty *text_prop;
 ;       char ***list_return;
