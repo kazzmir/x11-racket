@@ -1795,7 +1795,7 @@ int count;		/* defines range of change w. first_keycode*/
   (define* (GetWindowProperty dpy window property req-type return-data-type)
     ;; long-length=-1 so that actual_length returns the true, untruncated value
     (define-values (data count) (XGetWindowProperty dpy window property 0 -1 #f req-type))
-    (and data (cblock->list/finalizer data return-data-type count)))
+    (and data (cblock->list/finalizer data return-data-type count XFree)))
 
   ;; Return &(display->screens[screen])
   (define (screen-of-display display screen)
