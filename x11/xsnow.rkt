@@ -1159,7 +1159,9 @@
     x))
 
 (define (xtest2 display win)
-  (XQueryTree display win)
+  (define-values (parent children)
+    (XQueryTree display win))
+  children
   #;
   (begin
     (XGrabServer display)
@@ -1168,8 +1170,9 @@
     (printf "End!\n")
     (XUngrabServer display)))
 
-;; This freezes X.. why!?!?!
-(define (xtest display win)
+;; This freezes X.. why!?!?! 
+;; (Laurent: Probably because XQueryTree is not used correctly here)
+#;(define (xtest display win)
   (XGrabServer display)
   ; (CreateRegion)
   (let-values (((lst real) (XQueryTree display win)))
@@ -1186,9 +1189,10 @@
 (define (calculate-window-tops display root-window snow-catch 
 			       max-width max-height max-y-step 
 			       max-snow-flake-height max-win-snow-depth)
+  (define-values (parent children)
+    (XQueryTree display root-window))
   (let ((windows (CreateRegion))
-	(snow-allowed (CreateRegion))
-	(children (XQueryTree display root-window)))
+        (snow-allowed (CreateRegion)))
     (call-with-values 
       (lambda ()
         (let/cc ret
@@ -1754,7 +1758,7 @@
             (when need-calc
               (set! windows w1)
               (set! snow-allow s1))))
-	(sleep 0.05)
+        (sleep 0.05)
         (for-each (lambda (flake)
                     (update-snow-flake flake display rootWindow
                                        display-w display-h 

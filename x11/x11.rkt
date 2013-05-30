@@ -1766,12 +1766,12 @@ int count;		/* defines range of change w. first_keycode*/
     (let* ([display (Screen-display screen)]
            [root (Screen-root screen)]
            [swm-vroot (XInternAtom display "__SWM_VROOT" #f)])
-      (for-each (lambda (window)
-                  (let-values ([(new-window n) (XGetWindowProperty display window
-                                                        swm-vroot 0 1 #f 'XA_WINDOW)])
-                    (when new-window
-                      (set! root (ptr-ref new-window Window 0)))))
-                (XQueryTree display root))
+      (let-values ([(parent children) (XQueryTree display root)])
+        (for ([window children])
+          (let-values ([(new-window n) (XGetWindowProperty display window
+                                                           swm-vroot 0 1 #f 'XA_WINDOW)])
+            (when new-window
+              (set! root (ptr-ref new-window Window 0))))))
       root))
 
   (defx11* XInternAtom : _XDisplay-pointer _string _bool -> Atom)
@@ -1935,11 +1935,11 @@ int count;		/* defines range of change w. first_keycode*/
   (defx11* XQueryTree :
     _XDisplay-pointer Window
     (f1 : (_ptr o Window)) ;; dont care
-    (f2 : (_ptr o Window)) ;; dont care
+    (parent : (_ptr o Window))
     (children : (_ptr o _pointer))
     (nchildren : (_ptr o _int))
     -> Status
-    -> (cblock->list/finalizer children Window nchildren XFree))
+    -> (values parent (cblock->list/finalizer children Window nchildren XFree)))
 
   (defx11* XSetErrorHandler : (_fun _XDisplay-pointer _XErrorEvent-pointer -> _int) -> _void)
 
