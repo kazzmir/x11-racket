@@ -1,3 +1,5 @@
 #lang setup/infotab
-(define deps '())
+
+(define collection 'multi)
+(define deps '("base" "rackunit-lib" "compatibility-lib"))
 
