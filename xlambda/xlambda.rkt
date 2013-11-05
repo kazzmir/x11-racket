@@ -88,7 +88,7 @@
       (define/public (fullscreen w) (size-show-window w root-rect))
       (define/public (size w r) (size-show-window w r))
       (define/public (hide w) (XUnmapWindow display w))
-      (define/public (hide-all l) (for ([x l]) (hide x))) ; wouldn't (map hide l) be simpler?
+      (define/public (hide-all l) (for ([x l]) (hide x)))
       (super-new)))
 
 
