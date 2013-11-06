@@ -121,379 +121,391 @@
 (define* (set-Xdebug! b)
   (set-ffi-obj! '_Xdebug libx11 _bool b))
 
-  (define* Pixel _ulong)
-  (define* XID _ulong)
-  (define* Time _ulong)
-  (define* VisualID _ulong)
-  (define* KeyCode _ubyte)
-  (define* XContext _int)
-  (define* XPointer _pointer)
-  (define* Drawable XID)
-  (define* Pixmap XID)
-  (define* Cursor XID)
-  (define* Font XID)
-  (define* ColorMap XID)
-  (define* GContext XID)
-  (define* KeySym XID) ; defined as a big _enum in keysymdef.rkt, but not used (no need I think)
-  (define* XrmQuark _int)
-  ;(define* Window XID)
-  ; null windows are turned into #f
-  (define* Window
-    (make-ctype XID
-                (λ(w)(or w None)) ; scheme->c
-                (λ(w)(and (not (= None w)) w)) ; c->scheme
-                ))
+(define* Pixel _ulong)
+(define* XID _ulong)
+(define* Time _ulong)
+(define* VisualID _ulong)
+(define* KeyCode _ubyte)
+(define* XContext _int)
+(define* XPointer _pointer)
+(define* Drawable XID)
+(define* Pixmap XID)
+(define* Cursor XID)
+(define* Font XID)
+(define* ColorMap XID)
+(define* GContext XID)
+(define* KeySym XID) ; defined as a big _enum in keysymdef.rkt, but not used (no need I think)
+(define* XrmQuark _int)
+;(define* Window XID)
+; null windows are turned into #f
+(define* Window
+  (make-ctype XID
+              (λ(w)(or w None)) ; scheme->c
+              (λ(w)(and (not (= None w)) w)) ; c->scheme
+              ))
 
-  (define RectangleRegion
-    (_enum '(RectangleOut = 0
-             RectangleIn = 1
-             RectanglePart = 2)))
-
-  ;@@ AtomProperty
-  (define AtomProperty
-   (_enum '(XA_PRIMARY = 1
-	    XA_SECONDARY = 2
-	    XA_ARC = 3
-	    XA_ATOM = 4
-	    XA_BITMAP = 5
-	    XA_CARDINAL = 6
-	    XA_COLORMAP = 7
-	    XA_CURSOR = 8
-	    XA_CUT_BUFFER0 = 9
-	    XA_CUT_BUFFER1 = 10
-	    XA_CUT_BUFFER2 = 11
-	    XA_CUT_BUFFER3 = 12
-	    XA_CUT_BUFFER4 = 13
-	    XA_CUT_BUFFER5 = 14
-	    XA_CUT_BUFFER6 = 15
-	    XA_CUT_BUFFER7 = 16
-	    XA_DRAWABLE = 17
-	    XA_FONT = 18
-	    XA_INTEGER = 19
-	    XA_PIXMAP = 20
-	    XA_POINT = 21
-	    XA_RECTANGLE = 22
-	    XA_RESOURCE_MANAGER = 23
-	    XA_RGB_COLOR_MAP = 24
-	    XA_RGB_BEST_MAP = 25
-	    XA_RGB_BLUE_MAP = 26
-	    XA_RGB_DEFAULT_MAP = 27
-	    XA_RGB_GRAY_MAP = 28
-	    XA_RGB_GREEN_MAP = 29
-	    XA_RGB_RED_MAP = 30
-	    XA_STRING = 31
-	    XA_VISUALID = 32
-	    XA_WINDOW = 33
-	    XA_WM_COMMAND = 34
-	    XA_WM_HINTS = 35
-	    XA_WM_CLIENT_MACHINE = 36
-	    XA_WM_ICON_NAME = 37
-	    XA_WM_ICON_SIZE = 38
-	    XA_WM_NAME = 39
-	    XA_WM_NORMAL_HINTS = 40
-	    XA_WM_SIZE_HINTS = 41
-	    XA_WM_ZOOM_HINTS = 42
-	    XA_MIN_SPACE = 43
-	    XA_NORM_SPACE = 44
-	    XA_MAX_SPACE = 45
-	    XA_END_SPACE = 46
-	    XA_SUPERSCRIPT_X = 47
-	    XA_SUPERSCRIPT_Y = 48
-	    XA_SUBSCRIPT_X = 49
-	    XA_SUBSCRIPT_Y = 50
-	    XA_UNDERLINE_POSITION = 51
-	    XA_UNDERLINE_THICKNESS = 52
-	    XA_STRIKEOUT_ASCENT = 53
-	    XA_STRIKEOUT_DESCENT = 54
-	    XA_ITALIC_ANGLE = 55
-	    XA_X_HEIGHT = 56
-	    XA_QUAD_WIDTH = 57
-	    XA_WEIGHT = 58
-	    XA_POINT_SIZE = 59
-	    XA_RESOLUTION = 60
-	    XA_COPYRIGHT = 61
-	    XA_NOTICE = 62
-	    XA_FONT_NAME = 63
-	    XA_FAMILY_NAME = 64
-	    XA_FULL_NAME = 65
-	    XA_CAP_HEIGHT = 66
-	    XA_WM_CLASS = 67
-	    XA_WM_TRANSIENT_FOR = 68
-	    XA_LAST_PREDEFINED = 68)
-          ; in case the incoming number is not recognized, just return it as is.
-          ; This is useful for the ctype Atom.
-          #:unknown values))
-
-  ;; Converts an atom symbol to a _uint number
-  (define* (atom-symbol->number atom)
-    ((ctype-scheme->c AtomProperty) atom))
-
-  ;; Converts an atom (symbol or number) to an atom number
-  (define* (atom->number atom)
-    (if (symbol? atom)
-        (atom-symbol->number atom)
-        atom))
-
-  ;; Like AtomProperty, but accepts numbers as input too.
-  ;; To convert the numbers into strings, use XGetAtomName(s)
-  (define* Atom
-    (make-ctype _ulong
-                atom->number
-                (λ(v)((ctype-c->scheme AtomProperty) v))
-                ))
+;; Like _enum but produces 2 values:
+;; The first one is the _enum, and the second one is a predicate
+;; that checks whether a given value is an adequate scheme value for input to the enum.
+;; Currently does not support the #:unknown keyword.
+(define (_enum/checker syms [basetype _ufixint])
+  (values (_enum syms basetype)
+          (λ(v)(memq v syms))))
 
 
-  (define XK-Pointer
-    (_enum '(Any = 0
-	     Left = #xfee0
-	     Right = #xfee1
-	     Up = #xfee2
-	     Down = #xfee3
-	     UpLeft = #xfee4
-	     UpRight = #xfee5
-	     DownLeft = #xfee6
-	     DownRight = #xfee7
-	     Button_Dflt = #xfee8
-	     Button1 = #xfee9
-	     Button2 = #xfeea
-	     Button3 = #xfeeb
-	     Button4 = #xfeec
-	     Button5 = #xfeed)
-	   _uint))
+(define RectangleRegion
+  (_enum '(RectangleOut = 0
+                        RectangleIn = 1
+                        RectanglePart = 2)))
 
-  (define BackingStoreHint
-    (_enum '(NotUseful = 0
-             WhenMapped = 1
-             Always = 2)))
+;@@ AtomProperty
+(define AtomProperty
+  (_enum '(XA_PRIMARY = 1
+                      XA_SECONDARY = 2
+                      XA_ARC = 3
+                      XA_ATOM = 4
+                      XA_BITMAP = 5
+                      XA_CARDINAL = 6
+                      XA_COLORMAP = 7
+                      XA_CURSOR = 8
+                      XA_CUT_BUFFER0 = 9
+                      XA_CUT_BUFFER1 = 10
+                      XA_CUT_BUFFER2 = 11
+                      XA_CUT_BUFFER3 = 12
+                      XA_CUT_BUFFER4 = 13
+                      XA_CUT_BUFFER5 = 14
+                      XA_CUT_BUFFER6 = 15
+                      XA_CUT_BUFFER7 = 16
+                      XA_DRAWABLE = 17
+                      XA_FONT = 18
+                      XA_INTEGER = 19
+                      XA_PIXMAP = 20
+                      XA_POINT = 21
+                      XA_RECTANGLE = 22
+                      XA_RESOURCE_MANAGER = 23
+                      XA_RGB_COLOR_MAP = 24
+                      XA_RGB_BEST_MAP = 25
+                      XA_RGB_BLUE_MAP = 26
+                      XA_RGB_DEFAULT_MAP = 27
+                      XA_RGB_GRAY_MAP = 28
+                      XA_RGB_GREEN_MAP = 29
+                      XA_RGB_RED_MAP = 30
+                      XA_STRING = 31
+                      XA_VISUALID = 32
+                      XA_WINDOW = 33
+                      XA_WM_COMMAND = 34
+                      XA_WM_HINTS = 35
+                      XA_WM_CLIENT_MACHINE = 36
+                      XA_WM_ICON_NAME = 37
+                      XA_WM_ICON_SIZE = 38
+                      XA_WM_NAME = 39
+                      XA_WM_NORMAL_HINTS = 40
+                      XA_WM_SIZE_HINTS = 41
+                      XA_WM_ZOOM_HINTS = 42
+                      XA_MIN_SPACE = 43
+                      XA_NORM_SPACE = 44
+                      XA_MAX_SPACE = 45
+                      XA_END_SPACE = 46
+                      XA_SUPERSCRIPT_X = 47
+                      XA_SUPERSCRIPT_Y = 48
+                      XA_SUBSCRIPT_X = 49
+                      XA_SUBSCRIPT_Y = 50
+                      XA_UNDERLINE_POSITION = 51
+                      XA_UNDERLINE_THICKNESS = 52
+                      XA_STRIKEOUT_ASCENT = 53
+                      XA_STRIKEOUT_DESCENT = 54
+                      XA_ITALIC_ANGLE = 55
+                      XA_X_HEIGHT = 56
+                      XA_QUAD_WIDTH = 57
+                      XA_WEIGHT = 58
+                      XA_POINT_SIZE = 59
+                      XA_RESOLUTION = 60
+                      XA_COPYRIGHT = 61
+                      XA_NOTICE = 62
+                      XA_FONT_NAME = 63
+                      XA_FAMILY_NAME = 64
+                      XA_FULL_NAME = 65
+                      XA_CAP_HEIGHT = 66
+                      XA_WM_CLASS = 67
+                      XA_WM_TRANSIENT_FOR = 68
+                      XA_LAST_PREDEFINED = 68)
+         ; in case the incoming number is not recognized, just return it as is.
+         ; This is useful for the ctype Atom.
+         #:unknown values))
 
-  (define InputType
-    (_enum '(InputOutput = 1
-             InputOnly = 2)
-           _uint))
+;; Converts an atom symbol to a _uint number
+(define* (atom-symbol->number atom)
+  ((ctype-scheme->c AtomProperty) atom))
 
-  (define Gravity
-    (_enum '(ForgetGravity = 0
-	     NorthWestGravity = 1
-	     NorthGravity = 2
-	     NorthEastGravity = 3
-	     WestGravity = 4
-	     CenterGravity = 5
-	     EastGravity = 6
-	     SouthWestGravity = 7
-	     SouthGravity = 8
-	     SouthEastGravity = 9
-	     StaticGravity = 10)))
+;; Converts an atom (symbol or number) to an atom number
+(define* (atom->number atom)
+  (if (symbol? atom)
+      (atom-symbol->number atom)
+      atom))
 
-  (define Modifiers
-    (_bitmask '(ShiftMask  = #b0000000000001
-		LockMask     = #b0000000000010 ; CapsLock
-		ControlMask  = #b0000000000100
-		Mod1Mask     = #b0000000001000 ; Alt/meta
-		Mod2Mask     = #b0000000010000 ; NumLock
-		Mod3Mask     = #b0000000100000 ; Super
-		Mod4Mask     = #b0000001000000 ;
-		Mod5Mask     = #b0000010000000 ; AltGr
-		Button1Mask  = #b0000100000000
-		Button2Mask  = #b0001000000000
-		Button3Mask  = #b0010000000000
-		Button4Mask  = #b0100000000000
-		Button5Mask  = #b1000000000000
-		Any          = #x8000)))
-
-  (define* keyboard-modifiers
-    #(ShiftMask  LockMask  ControlMask  Mod1Mask  Mod2Mask  Mod3Mask  Mod4Mask  Mod5Mask))
+;; Like AtomProperty, but accepts numbers as input too.
+;; To convert the numbers into strings, use XGetAtomName(s)
+(define* Atom
+  (make-ctype _ulong
+              atom->number
+              (λ(v)((ctype-c->scheme AtomProperty) v))
+              ))
 
 
-  (define GrabMode
-    (_enum '(GrabModeSync = 0
-             GrabModeAsync = 1)))
+(define XK-Pointer
+  (_enum '(Any = 0
+               Left = #xfee0
+               Right = #xfee1
+               Up = #xfee2
+               Down = #xfee3
+               UpLeft = #xfee4
+               UpRight = #xfee5
+               DownLeft = #xfee6
+               DownRight = #xfee7
+               Button_Dflt = #xfee8
+               Button1 = #xfee9
+               Button2 = #xfeea
+               Button3 = #xfeeb
+               Button4 = #xfeec
+               Button5 = #xfeed)
+         _uint))
 
-  (define WindowChanges
-    (_bitmask '(X =     #b0000001
-		Y =           #b0000010
-		Width =       #b0000100
-		Height =      #b0001000
-		BorderWidth = #b0010000
-		Sibling =     #b0100000
-		StackMode =   #b1000000)
-	      _uint))
+(define BackingStoreHint
+  (_enum '(NotUseful = 0
+                     WhenMapped = 1
+                     Always = 2)))
 
-  (define WindowChanges-long
-    (_bitmask '(X =      #b0000001
-		Y =            #b0000010
-		Width =        #b0000100
-		Height =       #b0001000
-		BorderWidth =  #b0010000
-		Sibling =      #b0100000
-		StackMode =    #b1000000)
-	      _ulong))
+(define InputType
+  (_enum '(InputOutput = 1
+                       InputOnly = 2)
+         _uint))
 
-  (define ChangeWindowAttributes
-    (_bitmask '(BackPixmap       = #b000000000000001
-                BackPixel        = #b000000000000010
-                BorderPixmap     = #b000000000000100
-                BorderPixel      = #b000000000001000
-                BitGravity       = #b000000000010000
-                WinGravity       = #b000000000100000
-                BackingStore     = #b000000001000000
-                BackingPlanes    = #b000000010000000
-                BackingPixel     = #b000000100000000
-                OverrideRedirect = #b000001000000000
-                SaveUnder        = #b000010000000000
-                EventMask        = #b000100000000000
-                DontPropagate    = #b001000000000000
-                Colormap         = #b010000000000000
-                Cursor           = #b100000000000000)
-              _ulong))
+(define Gravity
+  (_enum '(ForgetGravity = 0
+                         NorthWestGravity = 1
+                         NorthGravity = 2
+                         NorthEastGravity = 3
+                         WestGravity = 4
+                         CenterGravity = 5
+                         EastGravity = 6
+                         SouthWestGravity = 7
+                         SouthGravity = 8
+                         SouthEastGravity = 9
+                         StaticGravity = 10)))
 
-  (define GCAttributes
-    (_bitmask '(Function          =    #b00000000000000000000001
-                PlaneMask         =    #b00000000000000000000010
-                Foreground        =    #b00000000000000000000100
-                Background        =    #b00000000000000000001000
-                LineWidth         =    #b00000000000000000010000
-                LineStyle         =    #b00000000000000000100000
-                CapStyle          =    #b00000000000000001000000
-                JoinStyle         =    #b00000000000000010000000
-                FillStyle         =    #b00000000000000100000000
-                FillRule          =    #b00000000000001000000000
-                Tile              =    #b00000000000010000000000
-                Stipple           =    #b00000000000100000000000
-                TileStipXOrigin   =    #b00000000001000000000000
-                TileStipYOrigin   =    #b00000000010000000000000
-                Font              =    #b00000000100000000000000
-                SubwindowMode     =    #b00000001000000000000000
-                GraphicsExposures =    #b00000010000000000000000
-                ClipXOrigin       =    #b00000100000000000000000
-                ClipYOrigin       =    #b00001000000000000000000
-                ClipMask          =    #b00010000000000000000000
-                DashOffset        =    #b00100000000000000000000
-                DashList          =    #b01000000000000000000000
-                ArcMode           =    #b10000000000000000000000
-                LastBit           =    #b10000000000000000000000)
-              _ulong))
+(define Modifiers
+  (_bitmask '(ShiftMask  = #b0000000000001
+                         LockMask     = #b0000000000010 ; CapsLock
+                         ControlMask  = #b0000000000100
+                         Mod1Mask     = #b0000000001000 ; Alt/meta
+                         Mod2Mask     = #b0000000010000 ; NumLock
+                         Mod3Mask     = #b0000000100000 ; Super
+                         Mod4Mask     = #b0000001000000 ;
+                         Mod5Mask     = #b0000010000000 ; AltGr
+                         Button1Mask  = #b0000100000000
+                         Button2Mask  = #b0001000000000
+                         Button3Mask  = #b0010000000000
+                         Button4Mask  = #b0100000000000
+                         Button5Mask  = #b1000000000000
+                         Any          = #x8000)))
 
-  (define XICCEncodingStyle
-    (_enum '(XStringStyle
-	     XCompoundTextStyle
-	     XTextStyle
-	     XStdICCTextStyle
-	     XUTF8StringStyle)))
+(define* keyboard-modifiers
+  #(ShiftMask  LockMask  ControlMask  Mod1Mask  Mod2Mask  Mod3Mask  Mod4Mask  Mod5Mask))
 
-  (define FillStyle
-    (_enum '(FillSolid = 0
-	     FillTiled = 1
-	     FillStippled = 2
-	     FillOpaqueStippled = 3)))
 
-  (define WindowViewable
-    (_enum '(IsUnmapped = 0
-             IsUnviewable = 1
-             IsViewable = 2)))
+(define GrabMode
+  (_enum '(GrabModeSync = 0
+                        GrabModeAsync = 1)))
 
-  (define EventQueue
-    (_enum '(QueuedAlready = 0
-             QueuedAfterReading = 1
-             QueuedAfterFlush 2)))
+(define WindowChanges
+  (_bitmask '(X =     #b0000001
+                Y =           #b0000010
+                Width =       #b0000100
+                Height =      #b0001000
+                BorderWidth = #b0010000
+                Sibling =     #b0100000
+                StackMode =   #b1000000)
+            _uint))
 
-  (define EventType
-    (_enum '(KeyPress = 2
-             KeyRelease = 3
-             ButtonPress = 4
-             ButtonRelease = 5
-             MotionNotify = 6
-             EnterNotify = 7
-             LeaveNotify = 8
-             FocusIn = 9
-             FocusOut = 10
-             KeymapNotify = 11
-             Expose = 12
-             GraphicsExpose = 13
-             NoExpose = 14
-             VisibilityNotify = 15
-             CreateNotify = 16
-             DestroyNotify = 17
-             UnmapNotify = 18
-             MapNotify = 19
-             MapRequest = 20
-             ReparentNotify = 21
-             ConfigureNotify = 22
-             ConfigureRequest = 23
-             GravityNotify = 24
-             ResizeRequest = 25
-             CirculateNotify = 26
-             CirculateRequest = 27
-             PropertyNotify = 28
-             SelectionClear = 29
-             SelectionRequest = 30
-             SelectionNotify = 31
-             ColormapNotify = 32
-             ClientMessage = 33
-             MappingNotify = 34
-             LASTEvent = 35)))
+(define WindowChanges-long
+  (_bitmask '(X =      #b0000001
+                Y =            #b0000010
+                Width =        #b0000100
+                Height =       #b0001000
+                BorderWidth =  #b0010000
+                Sibling =      #b0100000
+                StackMode =    #b1000000)
+            _ulong))
 
-  ;;; Some constants
+(define ChangeWindowAttributes
+  (_bitmask '(BackPixmap       = #b000000000000001
+                               BackPixel        = #b000000000000010
+                               BorderPixmap     = #b000000000000100
+                               BorderPixel      = #b000000000001000
+                               BitGravity       = #b000000000010000
+                               WinGravity       = #b000000000100000
+                               BackingStore     = #b000000001000000
+                               BackingPlanes    = #b000000010000000
+                               BackingPixel     = #b000000100000000
+                               OverrideRedirect = #b000001000000000
+                               SaveUnder        = #b000010000000000
+                               EventMask        = #b000100000000000
+                               DontPropagate    = #b001000000000000
+                               Colormap         = #b010000000000000
+                               Cursor           = #b100000000000000)
+            _ulong))
 
-  (define* CopyFromParent #f)
-  (define* CopyFromParent/int 0)
-  (define* None 0)
-  (define* (None? x) (or (not x) (equal? x None))) ; sometimes the null pointer is turned into #f, sometimes into 0?
+(define GCAttributes
+  (_bitmask '(Function          =    #b00000000000000000000001
+                                PlaneMask         =    #b00000000000000000000010
+                                Foreground        =    #b00000000000000000000100
+                                Background        =    #b00000000000000000001000
+                                LineWidth         =    #b00000000000000000010000
+                                LineStyle         =    #b00000000000000000100000
+                                CapStyle          =    #b00000000000000001000000
+                                JoinStyle         =    #b00000000000000010000000
+                                FillStyle         =    #b00000000000000100000000
+                                FillRule          =    #b00000000000001000000000
+                                Tile              =    #b00000000000010000000000
+                                Stipple           =    #b00000000000100000000000
+                                TileStipXOrigin   =    #b00000000001000000000000
+                                TileStipYOrigin   =    #b00000000010000000000000
+                                Font              =    #b00000000100000000000000
+                                SubwindowMode     =    #b00000001000000000000000
+                                GraphicsExposures =    #b00000010000000000000000
+                                ClipXOrigin       =    #b00000100000000000000000
+                                ClipYOrigin       =    #b00001000000000000000000
+                                ClipMask          =    #b00010000000000000000000
+                                DashOffset        =    #b00100000000000000000000
+                                DashList          =    #b01000000000000000000000
+                                ArcMode           =    #b10000000000000000000000
+                                LastBit           =    #b10000000000000000000000)
+            _ulong))
 
-  (define* CurrentTime 0);(get-ffi-obj 'CurrentTime libx11 _long)) ; nope...
+(define XICCEncodingStyle
+  (_enum '(XStringStyle
+           XCompoundTextStyle
+           XTextStyle
+           XStdICCTextStyle
+           XUTF8StringStyle)))
 
-  (define* PointerRoot 1)
+(define FillStyle
+  (_enum '(FillSolid = 0
+                     FillTiled = 1
+                     FillStippled = 2
+                     FillOpaqueStippled = 3)))
 
-  (define* RevertTo
-    (_bitmask `(RevertToNone = 0
-                RevertToPointerRoot = 1
-                RevertToParent = 2)
-              _int))
+(define WindowViewable
+  (_enum '(IsUnmapped = 0
+                      IsUnviewable = 1
+                      IsViewable = 2)))
 
-  (define* InputMask ;sometimes called event_mask
-    (_bitmask '(NoEventMask =              #x00000000
-                KeyPressMask =             #x00000001
-                KeyReleaseMask =           #x00000002
-                ButtonPressMask =          #x00000004
-                ButtonReleaseMask =        #x00000008
-                EnterWindowMask =          #x00000010
-                LeaveWindowMask =          #x00000020
-                PointerMotionMask =        #x00000040
-                PointerMotionHintMask =    #x00000080
-                Button1MotionMask =        #x00000100
-                Button2MotionMask =        #x00000200
-                Button3MotionMask =        #x00000400
-                Button4MotionMask =        #x00000800
-                Button5MotionMask =        #x00001000
-                ButtonMotionMask =         #x00002000
-                KeymapStateMask =          #x00004000
-                ExposureMask =             #x00008000
-                VisibilityChangeMask =     #x00010000
-                StructureNotifyMask =      #x00020000
-                ResizeRedirectMask =       #x00040000
-                SubstructureNotifyMask =   #x00080000
-                SubstructureRedirectMask = #x00100000
-                FocusChangeMask =          #x00200000
-                PropertyChangeMask =       #x00400000
-                ColormapChangeMask =       #x00800000
-                OwnerGrabButtonMask =      #x01000000)
-	      _long))
+(define EventQueue
+  (_enum '(QueuedAlready = 0
+                         QueuedAfterReading = 1
+                         QueuedAfterFlush 2)))
 
-  (define AllowEventMode
-    (_enum '(AsyncPointer = 0
-             SyncPointer
-             ReplayPointer
-             AsyncKeyboard
-             SyncKeyboard
-             ReplayKeyboard
-             AsyncBoth
-             SyncBoth
-             )))
+(define EventType
+  (_enum '(KeyPress = 2
+                    KeyRelease = 3
+                    ButtonPress = 4
+                    ButtonRelease = 5
+                    MotionNotify = 6
+                    EnterNotify = 7
+                    LeaveNotify = 8
+                    FocusIn = 9
+                    FocusOut = 10
+                    KeymapNotify = 11
+                    Expose = 12
+                    GraphicsExpose = 13
+                    NoExpose = 14
+                    VisibilityNotify = 15
+                    CreateNotify = 16
+                    DestroyNotify = 17
+                    UnmapNotify = 18
+                    MapNotify = 19
+                    MapRequest = 20
+                    ReparentNotify = 21
+                    ConfigureNotify = 22
+                    ConfigureRequest = 23
+                    GravityNotify = 24
+                    ResizeRequest = 25
+                    CirculateNotify = 26
+                    CirculateRequest = 27
+                    PropertyNotify = 28
+                    SelectionClear = 29
+                    SelectionRequest = 30
+                    SelectionNotify = 31
+                    ColormapNotify = 32
+                    ClientMessage = 33
+                    MappingNotify = 34
+                    LASTEvent = 35)))
 
-  ;; for XChangeProperty
-  (define PropMode
-    (_enum '(PropModeReplace
-             PropModePrepend
-             PropModeAppend)))
+;;; Some constants
+
+(define* CopyFromParent #f)
+(define* CopyFromParent/int 0)
+(define* None 0)
+(define* (None? x) (or (not x) (equal? x None))) ; sometimes the null pointer is turned into #f, sometimes into 0?
+
+(define* CurrentTime 0);(get-ffi-obj 'CurrentTime libx11 _long)) ; nope...
+
+(define* PointerRoot 1)
+
+(define* RevertTo
+  (_bitmask `(RevertToNone = 0
+                           RevertToPointerRoot = 1
+                           RevertToParent = 2)
+            _int))
+
+(define* InputMask ;sometimes called event_mask
+  (_bitmask '(NoEventMask =              #x00000000
+                          KeyPressMask =             #x00000001
+                          KeyReleaseMask =           #x00000002
+                          ButtonPressMask =          #x00000004
+                          ButtonReleaseMask =        #x00000008
+                          EnterWindowMask =          #x00000010
+                          LeaveWindowMask =          #x00000020
+                          PointerMotionMask =        #x00000040
+                          PointerMotionHintMask =    #x00000080
+                          Button1MotionMask =        #x00000100
+                          Button2MotionMask =        #x00000200
+                          Button3MotionMask =        #x00000400
+                          Button4MotionMask =        #x00000800
+                          Button5MotionMask =        #x00001000
+                          ButtonMotionMask =         #x00002000
+                          KeymapStateMask =          #x00004000
+                          ExposureMask =             #x00008000
+                          VisibilityChangeMask =     #x00010000
+                          StructureNotifyMask =      #x00020000
+                          ResizeRedirectMask =       #x00040000
+                          SubstructureNotifyMask =   #x00080000
+                          SubstructureRedirectMask = #x00100000
+                          FocusChangeMask =          #x00200000
+                          PropertyChangeMask =       #x00400000
+                          ColormapChangeMask =       #x00800000
+                          OwnerGrabButtonMask =      #x01000000)
+            _long))
+
+(define AllowEventMode
+  (_enum '(AsyncPointer = 0
+                        SyncPointer
+                        ReplayPointer
+                        AsyncKeyboard
+                        SyncKeyboard
+                        ReplayKeyboard
+                        AsyncBoth
+                        SyncBoth
+                        )))
+
+;; for XChangeProperty
+(define-values (PropMode PropMode?)
+  (_enum/checker
+   '(PropModeReplace
+     PropModePrepend
+     PropModeAppend)))
+(provide PropMode?)
+
 
 
     #|
