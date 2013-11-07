@@ -1,11 +1,12 @@
 #lang racket/base
 
-  ;; good resources
-  ;; http://tronche.com/gui/x/xlib/function-index.html
-  ;; http://www.xfree86.org/current/manindex3.html
+;; good resources
+;; http://tronche.com/gui/x/xlib/function-index.html
+;; http://www.xfree86.org/current/manindex3.html
+;; http://en.wikisource.org/wiki/Xlib_-_C_Language_X_Interface
 
 #| TODO
-- most functions don't have the correct type
+- many functions still don't have the correct type.
   They must use the defined types instead of _int, _uint, etc.
 - Many functions should return a Status and not an _int
 
@@ -272,12 +273,12 @@
 
 (define BackingStoreHint
   (_enum '(NotUseful = 0
-                     WhenMapped = 1
-                     Always = 2)))
+           WhenMapped = 1
+           Always = 2)))
 
 (define InputType
   (_enum '(InputOutput = 1
-                       InputOnly = 2)
+           InputOnly = 2)
          _uint))
 
 (define Gravity
@@ -2421,7 +2422,7 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XAddHost                  : _XDisplay-pointer _XHostAddress-pointer -> _int)
 (defx11* XAddHosts                 : _XDisplay-pointer _XHostAddress-pointer _int -> _int)
 (defx11* XAddToExtensionList       : _pointer _XExtData-pointer -> _int)
-(defx11* XAddToSaveSet             : _XDisplay-pointer _ulong -> _int)
+(defx11* XAddToSaveSet             : _XDisplay-pointer Window -> _void)
 (defx11* XAllocColor               : _XDisplay-pointer _ulong _XColor-pointer -> Status)
 (defx11* XAllocColorCells          : _XDisplay-pointer _ulong _int (_ptr i _ulong) _uint (_ptr i _ulong) _uint -> _int)
 (defx11* XAllocColorPlanes         : _XDisplay-pointer _ulong _int (_ptr i _ulong) _int _int _int _int (_ptr i _ulong) (_ptr i _ulong) (_ptr i _ulong) -> _int)
@@ -2447,7 +2448,7 @@ int count;		/* defines range of change w. first_keycode*/
                                  (case format [(8) _int8] [(16) _int16] [(32) _int32]))
                    (length data-list)))
 
-(defx11* XChangeSaveSet            : _XDisplay-pointer _ulong _int -> _int)
+(defx11* XChangeSaveSet            : _XDisplay-pointer Window _int -> _void)
 (defx11* XChangeWindowAttributes   : _XDisplay-pointer Window ChangeWindowAttributes _XSetWindowAttributes-pointer -> _int)
 
 (defx11* XCheckIfEvent             : _XDisplay-pointer _XEvent-pointer (_fun _XDisplay-pointer _XEvent-pointer _pointer -> _bool) _string -> _int)
@@ -2591,7 +2592,7 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XRebindKeysym            : _XDisplay-pointer _ulong (_ptr i _ulong) _int (_ptr i _ubyte) _int -> _int)
 (defx11* XRecolorCursor           : _XDisplay-pointer _ulong _XColor-pointer _XColor-pointer -> _int)
 (defx11* XRefreshKeyboardMapping  : _XMappingEvent-pointer -> _int)
-(defx11* XRemoveFromSaveSet       : _XDisplay-pointer Window -> _int)
+(defx11* XRemoveFromSaveSet       : _XDisplay-pointer Window -> _void)
 (defx11* XRemoveHost              : _XDisplay-pointer _XHostAddress-pointer -> _int)
 (defx11* XRemoveHosts             : _XDisplay-pointer _XHostAddress-pointer _int -> _int)
 (defx11* XReparentWindow          : _XDisplay-pointer Window Window _int _int -> _int)
