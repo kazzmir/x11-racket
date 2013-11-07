@@ -2661,7 +2661,7 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XSetBackground          : _XDisplay-pointer _XGC-pointer _ulong -> _int)
 (defx11* XSetWindowBorder        : _XDisplay-pointer Window _ulong -> _int)
 (defx11* XSetWindowBorderPixmap  : _XDisplay-pointer Window _ulong -> _int)
-(defx11* XSetWindowBorderWidth   : _XDisplay-pointer Window _uint -> _int)
+(defx11* XSetWindowBorderWidth   : _XDisplay-pointer Window _uint -> _void)
 (defx11* XSetWindowColormap      : _XDisplay-pointer Window _ulong -> _int)
 (defx11* XStoreBuffer            : _XDisplay-pointer _string _int _int -> _int)
 (defx11* XStoreBytes             : _XDisplay-pointer _string _int -> _int)
