@@ -2469,7 +2469,7 @@ int count;		/* defines range of change w. first_keycode*/
 (defx11* XDefaultDepthOfScreen     : _Screen-pointer -> _int)
 (defx11* XDefaultScreen            : _XDisplay-pointer -> _int)
 (defx11* XDefineCursor             : _XDisplay-pointer Window _ulong -> _int)
-(defx11* XDeleteProperty           : _XDisplay-pointer Window _ulong -> _int)
+(defx11* XDeleteProperty           : _XDisplay-pointer Window Atom -> _void)
 (defx11* XDestroyWindow            : _XDisplay-pointer Window -> _int)
 (defx11* XDestroySubwindows        : _XDisplay-pointer Window -> _int)
 (defx11* XDoesBackingStore         : _Screen-pointer -> _int)
