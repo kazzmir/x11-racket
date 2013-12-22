@@ -228,8 +228,9 @@
            XA_FULL_NAME = 65
            XA_CAP_HEIGHT = 66
            XA_WM_CLASS = 67
-           XA_WM_TRANSIENT_FOR = 68
-           XA_LAST_PREDEFINED = 68)
+           XA_LAST_PREDEFINED = 68 ; don't be the last, or it takes precedence over transient_for 
+                                   ; when converted from number to atom
+           XA_WM_TRANSIENT_FOR = 68)
          ; in case the incoming number is not recognized, just return it as is.
          ; This is useful for the ctype Atom.
          #:unknown values))
@@ -1089,7 +1090,7 @@ Bool same_screen;	/* same screen flag */
      ;(data _cvector)
      (data (_union (_array _int8  20)
                    (_array _int16 10)
-                   (_array _int32 5)))
+                   (_array _long 5))) ; Warning: This must be a long, i.e. 64bits on 64bits systems!
      ))
 
   ;; Laurent Orseau -- 2012-10-27
