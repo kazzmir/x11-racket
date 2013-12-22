@@ -156,8 +156,8 @@
 
 (define RectangleRegion
   (_enum '(RectangleOut = 0
-                        RectangleIn = 1
-                        RectanglePart = 2)))
+           RectangleIn = 1
+           RectanglePart = 2)))
 
 ;@@ AtomProperty
 (define AtomProperty
@@ -1782,13 +1782,13 @@ int count;		/* defines range of change w. first_keycode*/
            [swm-vroot (XInternAtom display "__SWM_VROOT" #f)])
       (let-values ([(parent children) (XQueryTree display root)])
         (for ([window children])
-          (let-values ([(new-window n) (XGetWindowProperty display window
-                                                           swm-vroot 0 1 #f 'XA_WINDOW)])
+          (let ([new-window (car (or (GetWindowProperty display window swm-vroot)
+                                     '(#f)))])
             (when new-window
               (set! root (ptr-ref new-window Window 0))))))
       root))
 
-  (defx11* XInternAtom : _XDisplay-pointer _string _bool -> Atom)
+  (defx11* XInternAtom : _XDisplay-pointer _string/latin-1 _bool -> Atom)
 
   ;; TODO:
   ;; - Currently, does only a subset of what it is supposed to do.
@@ -1803,13 +1803,31 @@ int count;		/* defines range of change w. first_keycode*/
    (bytes_after : (_ptr o _ulong))
    (data : (_ptr o _pointer))
    -> (res : _bool) ; returns Success if all ok
-   -> (values data count))
+   -> (values actual_type actual_format data count))
 
-  ;; Same as XGetWindowProperty but returns a list of values of type return-data-type
-  (define* (GetWindowProperty dpy window property req-type return-data-type)
-    ;; long-length=-1 so that actual_length returns the true, untruncated value
-    (define-values (data count) (XGetWindowProperty dpy window property 0 -1 #f req-type))
+  ;; Same as XGetWindowProperty but returns a list of values of C FFI type return-data-type.
+  ;; Returns #f in case of failure (empty data).
+  ;; The following values are automatically set:
+  ;; long_offset = 0
+  ;; long_length = -1 so that actual_length returns the full, untruncated value
+  ;; delete = #f
+  ;; req_type = 0 = AnyPropertyType
+  (define* (GetWindowProperty/type dpy window property return-data-type)
+    (define-values (type fmt data count) (XGetWindowProperty dpy window property 0 -1 #f 0))
     (and data (cblock->list/finalizer data return-data-type count XFree)))
+
+  ;; Like GetWindowProperty, but guesses the data type using the return values of XGetWindowProperty
+  (define* (GetWindowProperty dpy window property)
+    (define-values (type fmt data count) (XGetWindowProperty dpy window property 0 -1 #f 0))
+    (define data-type 
+      (case type
+        [(XA_WINDOW) Window]
+        [(XA_CARDINAL) (case fmt [(8) _byte] [(16) _short] [(32) _long])] ; _long, not _int32 !
+        [(XA_ATOM) Atom]
+        [(XA_STRING) _string] ; _string/latin-1 ?
+        ;...
+        ))
+    (and data (cblock->list/finalizer data data-type count XFree)))
 
   ;; Return &(display->screens[screen])
   (define (screen-of-display display screen)
@@ -2445,7 +2463,7 @@ int count;		/* defines range of change w. first_keycode*/
 (define* (ChangeProperty display window property type mode data-list format)
   (check member format '(8 16 32))
   (XChangeProperty display window property type format mode
-                   (list->cblock data-list ;(append data-list '(0))
+                   (list->cblock data-list
                                  (case format [(8) _int8] [(16) _int16] [(32) _int32]))
                    (length data-list)))
 
@@ -2995,7 +3013,7 @@ int count;		/* defines range of change w. first_keycode*/
     XAllocColorPlanes 	XGetWMSizeHints 	XUngrabKeyboard
     XAllocIconSize 	XGetWindowAttributes 	XUngrabPointer
     XAllocNamedColor 	XGetWindowProperty 	XUngrabServer
-    XAllocSizeHints 	XGetWindowProperty 	XUninstallColormap
+    XAllocSizeHints 	 	 	 	XUninstallColormap
     XAllocStandardColormap 	XGetZoomHints 	XUnionRectWithRegion
     XAllocWMHints 	XGrabButton 	XUnionRegion
     XAllowEvents 	XGrabKey 	XUniqueContext
