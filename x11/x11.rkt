@@ -13,12 +13,11 @@
 |#
 
 (require (for-syntax racket/base)
+         "fd.rkt"
+         "utils.rkt"
          ffi/unsafe
          ffi/unsafe/cvector
          (only-in '#%foreign ctype-c->scheme ctype-scheme->c)
-         "fd.rkt"
-         "utils.rkt"
-         ;"keysymtype.rkt"
          rackunit
          )
 
@@ -27,7 +26,6 @@
            racket/list))
 
 (define libx11 (ffi-lib "libX11" '("6")))
-;(provide libx11)
 
 ;; Checks the environment for a DEBUG variable
 ;; Usage example: X11_RACKET_DEBUG=1 racket test-x11.rkt
@@ -500,6 +498,35 @@
            SyncBoth
            )))
 
+(define ErrorCode
+  (_enum '(Success      = 0 ; everything's okay
+           BadRequest   = 1 ; bad request code
+           BadValue     = 2 ; int parameter out of range
+           BadWindow    = 3 ; parameter not a Window
+           BadPixmap    = 4 ; parameter not a Pixmap
+           BadAtom      = 5 ; parameter not an Atom
+           BadCursor    = 6 ; parameter not a Cursor
+           BadFont      = 7 ; parameter not a Font
+           BadMatch     = 8 ; parameter mismatch
+           BadDrawable  = 9 ; parameter not a Pixmap or Window
+           BadAccess    = 10 #| depending on context:
+                                 - key/button already grabbed
+                                 - attempt to free an illegal 
+                                   cmap entry 
+                                - attempt to store into a read-only 
+                                   color map entry.
+                                - attempt to modify the access control
+                                   list from other than the local host.
+                                |#
+           BadAlloc           = 11 ; insufficient resources
+           BadColor           = 12 ; no such colormap
+           BadGC              = 13 ; parameter not a GC
+           BadIDChoice        = 14 ; choice not in range or already used
+           BadName            = 15 ; font or color name doesn't exist
+           BadLength          = 16 ; Request length incorrect
+           BadImplementation  = 17 ; server is defective
+           )))
+
 ;; for XChangeProperty
 (define-values (PropMode PropMode?)
   (_enum/checker
@@ -510,7 +537,7 @@
 
 
 
-    #|
+#|
   typedef struct {
 	XExtData *ext_data;	/* hook for extension to hang data */
 	struct _XDisplay *display;/* back pointer to display structure */
@@ -533,35 +560,35 @@
 
   |#
 
-  (define-cstruct _XIconSize
-    ((min-width _int)
-     (min-height _int)
-     (max-width _int)
-     (max-height _int)
-     (width-inc _int)
-     (height-inc _int)))
+(define-cstruct _XIconSize
+  ((min-width _int)
+   (min-height _int)
+   (max-width _int)
+   (max-height _int)
+   (width-inc _int)
+   (height-inc _int)))
 
-  (define-cstruct _XGC
-    ((ext-data _pointer)
-     (gid GContext)))
+(define-cstruct _XGC
+  ((ext-data _pointer)
+   (gid GContext)))
 
-  #|
+#|
   typedef struct {
           Time time;
 	  	short x, y;
 		} XTimeCoord;
 		|#
 
-  (define-cstruct _XTimeCoord
-		  ((time Time)
-		   (x _short)
-		   (y _short)))
+(define-cstruct _XTimeCoord
+  ((time Time)
+   (x _short)
+   (y _short)))
 
-  (define-cstruct _XExtData
-    ((number _int)
-     (next _XExtData-pointer)
-     (free-private _fpointer)
-     (private-data XPointer)))
+(define-cstruct _XExtData
+  ((number _int)
+   (next _XExtData-pointer)
+   (free-private _fpointer)
+   (private-data XPointer)))
 
 #|
 typedef struct {
@@ -578,76 +605,76 @@ int map_entries;	/* color map entries */
 } Visual;
 |#
 
-  (define-cstruct _Visual
-		  ((ext-data _XExtData-pointer)
-		   (visualid VisualID)
-		   (class _int)
-		   (red-mask _ulong)
-		   (green-mask _ulong)
-		   (blue-mask _ulong)
-		   (bits-per-rgb _int)
-		   (map-entries _int)))
-  (provide _Visual-pointer)
+(define-cstruct _Visual
+  ((ext-data _XExtData-pointer)
+   (visualid VisualID)
+   (class _int)
+   (red-mask _ulong)
+   (green-mask _ulong)
+   (blue-mask _ulong)
+   (bits-per-rgb _int)
+   (map-entries _int)))
+(provide _Visual-pointer)
 
-  (define-cstruct _XWMHints
-		  ((flags _long)
-		   (input _bool)
-		   (initial-state _int)
-		   (icon-pixmap Pixmap)
-		   (icon-window Window)
-		   (icon-x _int)
-		   (icon-y _int)
-		   (icon-mask Pixmap)
-		   (window-group XID)))
+(define-cstruct _XWMHints
+  ((flags _long)
+   (input _bool)
+   (initial-state _int)
+   (icon-pixmap Pixmap)
+   (icon-window Window)
+   (icon-x _int)
+   (icon-y _int)
+   (icon-mask Pixmap)
+   (window-group XID)))
 
-  (define-cstruct _XDisplay
-    ((ext-data _pointer)
-     (private1 _pointer)
-     (fd _int)
-     (private2 _int)
-     (proto_major_version _int)
-     (proto_minor_version _int)
-     (vendor _string)
-     (private3 XID)
-     (private4 XID)
-     (private5 XID)
-     (private6 XID)
-     (resource_alloc _pointer)
-     (byte-order _int)
-     (bitmap-unit _int)
-     (bitmap-pad _int)
-     (bitmap-bit-order _int)
-     (nformats _int)
-     (pixmap-format _pointer)
-     (private8 _int)
-     (releaes _int)
-     (private9 _pointer)
-     (private10 _pointer)
-     (qlen _int)
-     (last-request-read _ulong)
-     (request _ulong)
-     (private11 _pointer)
-     (private12 _pointer)
-     (private13 _pointer)
-     (private14 _pointer)
-     (max-request-size _uint)
-     (db _pointer)
-     (private15 _pointer)
-     (display-name _string)
-     (default-screen _int)
-     (nscreens _int)
-     (screens _pointer)
-     (motion-buffer _ulong)
-     (private16 _ulong)
-     (min-keycode _int)
-     (max-keycode _int)
-     (private17 _pointer)
-     (private18 _pointer)
-     (private19 _int)
-     (xdefaults _string)))
-  (provide _XDisplay-pointer)
+(define-cstruct _XDisplay
+  ((ext-data _pointer)
+   (private1 _pointer)
+   (fd _int)
+   (private2 _int)
+   (proto_major_version _int)
+   (proto_minor_version _int)
+   (vendor _string)
+   (private3 XID)
+   (private4 XID)
+   (private5 XID)
+   (private6 XID)
+   (resource_alloc _pointer)
+   (byte-order _int)
+   (bitmap-unit _int)
+   (bitmap-pad _int)
+   (bitmap-bit-order _int)
+   (nformats _int)
+   (pixmap-format _pointer)
+   (private8 _int)
+   (releaes _int)
+   (private9 _pointer)
+   (private10 _pointer)
+   (qlen _int)
+   (last-request-read _ulong)
+   (request _ulong)
+   (private11 _pointer)
+   (private12 _pointer)
+   (private13 _pointer)
+   (private14 _pointer)
+   (max-request-size _uint)
+   (db _pointer)
+   (private15 _pointer)
+   (display-name _string)
+   (default-screen _int)
+   (nscreens _int)
+   (screens _pointer)
+   (motion-buffer _ulong)
+   (private16 _ulong)
+   (min-keycode _int)
+   (max-keycode _int)
+   (private17 _pointer)
+   (private18 _pointer)
+   (private19 _int)
+   (xdefaults _string)))
+(provide _XDisplay-pointer)
 
-  #|
+#|
 
   typedef struct
 #ifdef XLIB_ILLEGAL_ACCESS
@@ -710,55 +737,55 @@ Display,
 
   |#
 
-  ;; Im too lazy to really figure out what this should be
-  ;; so ill just overcompensate
-  ;; Explanation: (Laurent Orseau -- 2012-10-27)
-  ;; XEvent is defined as a union (of XKeyPressedEvent, XButtonPressedEvent, etc.) in Xlib.h,
-  ;; but there is (yet) nothing exactly equivalent in Racket (except _union which is not perfect).
-  ;; The idea here is simple though:
-  ;; The type of a pointer as considered by Racket is checked with its cpointer-tag list,
-  ;; Further down this file, the XNextEvent* procedure adds the correct tag to the list,
-  ;; depending on the received event (and returns the event).
-  ;; Then the user can simply consider the XEvent as an instance of the type it needs,
-  ;; like XKeyPressedEvent (see the provided examples).
-  ;@@ XEvent
-  (define-cstruct _XEvent
-    ((type EventType)))
+;; Im too lazy to really figure out what this should be
+;; so ill just overcompensate
+;; Explanation: (Laurent Orseau -- 2012-10-27)
+;; XEvent is defined as a union (of XKeyPressedEvent, XButtonPressedEvent, etc.) in Xlib.h,
+;; but there is (yet) nothing exactly equivalent in Racket (except _union which is not perfect).
+;; The idea here is simple though:
+;; The type of a pointer as considered by Racket is checked with its cpointer-tag list,
+;; Further down this file, the XNextEvent* procedure adds the correct tag to the list,
+;; depending on the received event (and returns the event).
+;; Then the user can simply consider the XEvent as an instance of the type it needs,
+;; like XKeyPressedEvent (see the provided examples).
+;@@ XEvent
+(define-cstruct _XEvent
+  ((type EventType)))
 
-  ;; more laziness
-  ;; Instead of making the union of all the possible event types,
-  ;; we just create an empty event of the maximum size and
-  ;; then turn it into the correct type using pointer-tag.
-  ;; tag can be any XEvent* type
-  (define (make-dummy-XEvent [tag #f])
-    ;; 24 comes from Xlib.h
-    ;; typedef union XEvent { ...; long pad[24]; }
-    (let ([s (malloc 24 _long)])
-      (memset s 0 24 _long)
-      (cpointer-push-tag! s XEvent-tag)
-      (when tag
-        (cpointer-push-tag! s tag))
-      s))
-  (provide XEvent-type make-XEvent XEvent->list* make-dummy-XEvent)
+;; more laziness
+;; Instead of making the union of all the possible event types,
+;; we just create an empty event of the maximum size and
+;; then turn it into the correct type using pointer-tag.
+;; tag can be any XEvent* type
+(define (make-dummy-XEvent [tag #f])
+  ;; 24 comes from Xlib.h
+  ;; typedef union XEvent { ...; long pad[24]; }
+  (let ([s (malloc 24 _long)])
+    (memset s 0 24 _long)
+    (cpointer-push-tag! s XEvent-tag)
+    (when tag
+      (cpointer-push-tag! s tag))
+    s))
+(provide XEvent-type make-XEvent XEvent->list* make-dummy-XEvent)
 
-  (define-cstruct* _XExposeEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (window Window)
-     (x _int)
-     (y _int)
-     (width _int)
-     (height _int)
-     (count _int)))
+(define-cstruct* _XExposeEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (window Window)
+   (x _int)
+   (y _int)
+   (width _int)
+   (height _int)
+   (count _int)))
 
-  (define-cstruct* _XAnyEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (window Window)))
+(define-cstruct* _XAnyEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (window Window)))
 
 #|
 typedef struct {
@@ -778,413 +805,413 @@ Bool same_screen;	/* same screen flag */
 } XKeyEvent;
 |#
 
-  (define-cstructs* (_XKeyEvent _XKeyPressedEvent _XKeyReleasedEvent)
-		  ((type _int)
-		   (serial _ulong)
-		   (send-event _bool)
-		   (display _XDisplay-pointer)
-		   (window Window)
-		   (root Window)
-		   (subwindow Window)
-		   (time Time)
-		   (x _int)
-		   (y _int)
-		   (x-root _int)
-		   (y-root _int)
-		   ;(state _uint)
-		   (state Modifiers) ; Laurent Orseau -- 2012-10-26
-		   (keycode _uint)
-		   ;(keycode KeyCode) ; no, we can't, beause KeyCode is _ubyte... go figure...
-		   (same-screen _bool)))
+(define-cstructs* (_XKeyEvent _XKeyPressedEvent _XKeyReleasedEvent)
+  ((type _int)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (window Window)
+   (root Window)
+   (subwindow Window)
+   (time Time)
+   (x _int)
+   (y _int)
+   (x-root _int)
+   (y-root _int)
+   ;(state _uint)
+   (state Modifiers) ; Laurent Orseau -- 2012-10-26
+   (keycode _uint)
+   ;(keycode KeyCode) ; no, we can't, beause KeyCode is _ubyte... go figure...
+   (same-screen _bool)))
 
-  (define-cstructs* (_XButtonEvent _XButtonPressedEvent _XButtonReleasedEvent)
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (window Window)
-     (root Window)
-     (subwindow Window)
-     (time Time)
-     (x _int)
-     (y _int)
-     (x-root _int)
-     (y-root _int)
-     (state Modifiers)
-     (button _uint)
-     (same-screen _bool)))
+(define-cstructs* (_XButtonEvent _XButtonPressedEvent _XButtonReleasedEvent)
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (window Window)
+   (root Window)
+   (subwindow Window)
+   (time Time)
+   (x _int)
+   (y _int)
+   (x-root _int)
+   (y-root _int)
+   (state Modifiers)
+   (button _uint)
+   (same-screen _bool)))
 
-  (define-cstructs* (_XMotionEvent _XPointerMovedEvent)
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (window Window)
-     (root Window)
-     (subwindow Window)
-     (time Time)
-     (x _int)
-     (y _int)
-     (x-root _int)
-     (y-root _int)
-     (state Modifiers)
-     (is-hint _byte)
-     (same-screen _bool)))
+(define-cstructs* (_XMotionEvent _XPointerMovedEvent)
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (window Window)
+   (root Window)
+   (subwindow Window)
+   (time Time)
+   (x _int)
+   (y _int)
+   (x-root _int)
+   (y-root _int)
+   (state Modifiers)
+   (is-hint _byte)
+   (same-screen _bool)))
 
-  (define-cstructs* (_XCrossingEvent _XEnterWindowEvent _XLeaveWindowEvent)
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (window Window)
-     (root Window)
-     (subwindow Window)
-     (time Time)
-     (x _int)
-     (y _int)
-     (x-root _int)
-     (y-root _int)
-     (mode _int)
-     (detail _int)
-     (same-screen _bool)
-     (focus _bool)
-     (state _uint)))
+(define-cstructs* (_XCrossingEvent _XEnterWindowEvent _XLeaveWindowEvent)
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (window Window)
+   (root Window)
+   (subwindow Window)
+   (time Time)
+   (x _int)
+   (y _int)
+   (x-root _int)
+   (y-root _int)
+   (mode _int)
+   (detail _int)
+   (same-screen _bool)
+   (focus _bool)
+   (state _uint)))
 
-  (define-cstructs* (_XFocusChangeEvent _XFocusInEvent _XFocusOutEvent)
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (window Window)
-     (mode _int)
-     (detail _int)))
+(define-cstructs* (_XFocusChangeEvent _XFocusInEvent _XFocusOutEvent)
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (window Window)
+   (mode _int)
+   (detail _int)))
 
-  (define-cstruct* _XKeymapEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (window Window)
-     (key-vector _cvector)))
+(define-cstruct* _XKeymapEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (window Window)
+   (key-vector _cvector)))
 
-  (define-cstruct* _XGraphicsExposeEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (drawable Drawable)
-     (x _int)
-     (y _int)
-     (width _int)
-     (height _int)
-     (count _int)
-     (major-code _int)
-     (minor-code _int)))
+(define-cstruct* _XGraphicsExposeEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (drawable Drawable)
+   (x _int)
+   (y _int)
+   (width _int)
+   (height _int)
+   (count _int)
+   (major-code _int)
+   (minor-code _int)))
 
-  (define-cstruct* _XNoExposeEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (drawable Drawable)
-     (major-code _int)
-     (minor-code _int)))
+(define-cstruct* _XNoExposeEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (drawable Drawable)
+   (major-code _int)
+   (minor-code _int)))
 
-  (define-cstruct* _XVisibilityEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (window Window)
-     (state _int)))
+(define-cstruct* _XVisibilityEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (window Window)
+   (state _int)))
 
-  (define-cstruct* _XCreateWindowEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (parent Window)
-     (window Window)
-     (x _int)
-     (y _int)
-     (width _int)
-     (height _int)
-     (border-width _int)
-     (override-redirect _bool)))
+(define-cstruct* _XCreateWindowEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (parent Window)
+   (window Window)
+   (x _int)
+   (y _int)
+   (width _int)
+   (height _int)
+   (border-width _int)
+   (override-redirect _bool)))
 
-  (define-cstruct* _XDestroyWindowEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (event Window)
-     (window Window)))
+(define-cstruct* _XDestroyWindowEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (event Window)
+   (window Window)))
 
-  (define-cstruct* _XUnmapEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (event Window)
-     (window Window)
-     (from-configure _bool)))
+(define-cstruct* _XUnmapEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (event Window)
+   (window Window)
+   (from-configure _bool)))
 
-  (define-cstruct* _XMapEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (event Window)
-     (window Window)
-     (override-redirect _bool)))
+(define-cstruct* _XMapEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (event Window)
+   (window Window)
+   (override-redirect _bool)))
 
-  (define-cstruct* _XMapRequestEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (parent Window)
-     (window Window)))
+(define-cstruct* _XMapRequestEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (parent Window)
+   (window Window)))
 
-  (define-cstruct* _XReparentEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (event Window)
-     (window Window)
-     (parent Window)
-     (x _int)
-     (y _int)
-     (override-redirect _bool)))
+(define-cstruct* _XReparentEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (event Window)
+   (window Window)
+   (parent Window)
+   (x _int)
+   (y _int)
+   (override-redirect _bool)))
 
-  (define-cstruct* _XConfigureEvent
-    ((type _int)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (event Window)
-     (window Window)
-     (x _int)
-     (y _int)
-     (width _int)
-     (height _int)
-     (border-width _int)
-     (above Window)
-     (override-redirect _bool)))
+(define-cstruct* _XConfigureEvent
+  ((type _int)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (event Window)
+   (window Window)
+   (x _int)
+   (y _int)
+   (width _int)
+   (height _int)
+   (border-width _int)
+   (above Window)
+   (override-redirect _bool)))
 
-  (define-cstruct* _XGravityEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (event Window)
-     (window Window)
-     (x _int)
-     (y _int)))
+(define-cstruct* _XGravityEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (event Window)
+   (window Window)
+   (x _int)
+   (y _int)))
 
 
-  (define-cstruct* _XResizeRequestEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (window Window)
-     (width _int)
-     (height _int)))
+(define-cstruct* _XResizeRequestEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (window Window)
+   (width _int)
+   (height _int)))
 
-  (define-cstruct* _XConfigureRequestEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (parent Window)
-     (window Window)
-     (x _int)
-     (y _int)
-     (width _int)
-     (height _int)
-     (border-width _int)
-     (above Window)
-     (detail _int) ; = stack-mode
-     (value-mask WindowChanges-long)))
+(define-cstruct* _XConfigureRequestEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (parent Window)
+   (window Window)
+   (x _int)
+   (y _int)
+   (width _int)
+   (height _int)
+   (border-width _int)
+   (above Window)
+   (detail _int) ; = stack-mode
+   (value-mask WindowChanges-long)))
 
-  (define-cstruct* _XCirculateEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (event Window)
-     (window Window)
-     (place _int)))
+(define-cstruct* _XCirculateEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (event Window)
+   (window Window)
+   (place _int)))
 
-  (define-cstruct* _XCirculateRequestEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (parent Window)
-     (window Window)
-     (place _int)))
+(define-cstruct* _XCirculateRequestEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (parent Window)
+   (window Window)
+   (place _int)))
 
-  (define-cstruct* _XPropertyEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (window Window)
-     (atom Atom)
-     (time Time)
-     (state _int)))
+(define-cstruct* _XPropertyEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (window Window)
+   (atom Atom)
+   (time Time)
+   (state _int)))
 
-  (define-cstruct* _XSelectionClearEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (window Window)
-     (selection Atom)
-     (time Time)))
+(define-cstruct* _XSelectionClearEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (window Window)
+   (selection Atom)
+   (time Time)))
 
-  (define-cstruct* _XSelectionRequestEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (owner Window)
-     (requestor Window)
-     (selection Atom)
-     (target Atom)
-     (property Atom)
-     (time Time)))
+(define-cstruct* _XSelectionRequestEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (owner Window)
+   (requestor Window)
+   (selection Atom)
+   (target Atom)
+   (property Atom)
+   (time Time)))
 
-  (define-cstruct* _XSelectionEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (requestor Window)
-     (selection Atom)
-     (target Atom)
-     (property Atom)
-     (time Time)))
+(define-cstruct* _XSelectionEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (requestor Window)
+   (selection Atom)
+   (target Atom)
+   (property Atom)
+   (time Time)))
 
-  (define-cstruct* _XColormapEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (window Window)
-     (colormap ColorMap)
-     (new _bool)
-     (state _int)))
+(define-cstruct* _XColormapEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (window Window)
+   (colormap ColorMap)
+   (new _bool)
+   (state _int)))
 
-  (define-cstruct* _XClientMessageEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (window Window)
-     (message-type Atom)
-     (format _int)
-     ;(data _cvector)
-     (data (_union (_array _int8  20)
-                   (_array _int16 10)
-                   (_array _long 5))) ; Warning: This must be a long, i.e. 64bits on 64bits systems!
-     ))
+(define-cstruct* _XClientMessageEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (window Window)
+   (message-type Atom)
+   (format _int)
+   ;(data _cvector)
+   (data (_union (_array _int8  20)
+                 (_array _int16 10)
+                 (_array _long 5))) ; Warning: This must be a long, i.e. 64bits on 64bits systems!
+   ))
 
-  ;; Laurent Orseau -- 2012-10-27
-  ;; It's not really an XEvent?
-  (define-cstruct* _XErrorEvent
-    ((type _int)
-     (display _XDisplay-pointer)
-     (resourceid XID)
-     (serial _ulong)
-     (error-code _uint8)
-     (request-code _uint8)
-     (minor-code _uint8)))
+;; Laurent Orseau -- 2012-10-27
+;; It's not really an XEvent?
+(define-cstruct* _XErrorEvent
+  ((type _int)
+   (display _XDisplay-pointer)
+   (resourceid XID)
+   (serial _ulong)
+   (error-code _uint8)
+   (request-code _uint8)
+   (minor-code _uint8)))
 
-  (define-cstruct* _XMappingEvent
-    ((type EventType)
-     (serial _ulong)
-     (send-event _bool)
-     (display _XDisplay-pointer)
-     (window Window)
-     (request _int)
-     (first-keycode _int)
-     (count _int)))
+(define-cstruct* _XMappingEvent
+  ((type EventType)
+   (serial _ulong)
+   (send-event _bool)
+   (display _XDisplay-pointer)
+   (window Window)
+   (request _int)
+   (first-keycode _int)
+   (count _int)))
 
-  (define-cstruct _XCharStruct
-    ((lbearing _short)
-     (rbearing _short)
-     (width _short)
-     (ascent _short)
-     (descent _short)
-     (attributes _ushort)))
+(define-cstruct _XCharStruct
+  ((lbearing _short)
+   (rbearing _short)
+   (width _short)
+   (ascent _short)
+   (descent _short)
+   (attributes _ushort)))
 
-  (define-cstruct _XFontStruct
-    ((ext-data _XExtData-pointer)
-     (fid Font)
-     (direction _uint)
-     (min-char-or-byte2 _uint)
-     (max-char-or-byte2 _uint)
-     (min-byte1 _uint)
-     (max-byte1 _uint)
-     (all-chars-exist _bool)
-     (default-char _uint)
-     (n-properties _int)
-     (properties _pointer)
-     (min-bounds _XCharStruct)
-     (max-bounds _XCharStruct)
-     (per-char _XCharStruct-pointer)
-     (ascent _int)
-     (descent _int)))
+(define-cstruct _XFontStruct
+  ((ext-data _XExtData-pointer)
+   (fid Font)
+   (direction _uint)
+   (min-char-or-byte2 _uint)
+   (max-char-or-byte2 _uint)
+   (min-byte1 _uint)
+   (max-byte1 _uint)
+   (all-chars-exist _bool)
+   (default-char _uint)
+   (n-properties _int)
+   (properties _pointer)
+   (min-bounds _XCharStruct)
+   (max-bounds _XCharStruct)
+   (per-char _XCharStruct-pointer)
+   (ascent _int)
+   (descent _int)))
 
-  (define-cstruct _XStandardColormap
-    ((colormap ColorMap)
-     (red-max _ulong)
-     (red-mult _ulong)
-     (green-max _ulong)
-     (blue-max _ulong)
-     (blue-mult _ulong)
-     (base-pixel _ulong)
-     (visualid VisualID)
-     (killid XID)))
+(define-cstruct _XStandardColormap
+  ((colormap ColorMap)
+   (red-max _ulong)
+   (red-mult _ulong)
+   (green-max _ulong)
+   (blue-max _ulong)
+   (blue-mult _ulong)
+   (base-pixel _ulong)
+   (visualid VisualID)
+   (killid XID)))
 
-  (define-cstruct _XGCValues
-    ((function _int)
-     (plane-mask _ulong)
-     (foreground _ulong)
-     (background _ulong)
-     (line-width _int)
-     (line-style _int)
-     (cap-style _int)
-     (join-style _int)
-     (fill-style _int)
-     (fill-rule _int)
-     (arc-mode _int)
-     (tile Pixmap)
-     (stipple Pixmap)
-     (ts-x-origin _int)
-     (ts-y-origin _int)
-     (font Font)
-     (subwindow-mode _int)
-     (graphics-exposures _bool)
-     (clip-x-origin _int)
-     (clip-y-origin _int)
-     (clip-mask Pixmap)
-     (dash-offset _int)
-     (dashes _byte)))
-  (define (make-dummy-XGCValues)
-    (make-XGCValues 0 0 0 0
-		    0 0 0 0
-		    0 0 0 0
-		    0 0 0 0
-		    0 #f 0 0
-		    0 0 0))
+(define-cstruct _XGCValues
+  ((function _int)
+   (plane-mask _ulong)
+   (foreground _ulong)
+   (background _ulong)
+   (line-width _int)
+   (line-style _int)
+   (cap-style _int)
+   (join-style _int)
+   (fill-style _int)
+   (fill-rule _int)
+   (arc-mode _int)
+   (tile Pixmap)
+   (stipple Pixmap)
+   (ts-x-origin _int)
+   (ts-y-origin _int)
+   (font Font)
+   (subwindow-mode _int)
+   (graphics-exposures _bool)
+   (clip-x-origin _int)
+   (clip-y-origin _int)
+   (clip-mask Pixmap)
+   (dash-offset _int)
+   (dashes _byte)))
+(define (make-dummy-XGCValues)
+  (make-XGCValues 0 0 0 0
+                  0 0 0 0
+                  0 0 0 0
+                  0 0 0 0
+                  0 #f 0 0
+                  0 0 0))
 
-  (provide _XGCValues XGCValues-tag make-dummy-XGCValues
-           set-XGCValues-font! set-XGCValues-foreground!)
+(provide _XGCValues XGCValues-tag make-dummy-XGCValues
+         set-XGCValues-font! set-XGCValues-foreground!)
 
 #|
 typedef struct {
@@ -2468,7 +2495,7 @@ int count;		/* defines range of change w. first_keycode*/
                    (length data-list)))
 
 (defx11* XChangeSaveSet            : _XDisplay-pointer Window _int -> _void)
-(defx11* XChangeWindowAttributes   : _XDisplay-pointer Window ChangeWindowAttributes _XSetWindowAttributes-pointer -> _int)
+(defx11* XChangeWindowAttributes   : _XDisplay-pointer Window ChangeWindowAttributes _XSetWindowAttributes-pointer -> _void)
 
 (defx11* XCheckIfEvent             : _XDisplay-pointer _XEvent-pointer (_fun _XDisplay-pointer _XEvent-pointer _pointer -> _bool) _string -> _int)
 
