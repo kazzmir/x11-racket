@@ -403,7 +403,7 @@
 (define EventQueue
   (_enum '(QueuedAlready = 0
            QueuedAfterReading = 1
-           QueuedAfterFlush 2)))
+           QueuedAfterFlush = 2)))
 
 (define EventType
   (_enum '(KeyPress = 2
