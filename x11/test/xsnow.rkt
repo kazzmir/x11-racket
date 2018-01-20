@@ -13,8 +13,8 @@
 
 ; (require trace)
 ; (require (lib "errortrace.ss" "errortrace"))
-(require "x11.rkt")
-(require "x11-xpm.rkt")
+(require "../x11.rkt")
+(require "../x11-xpm.rkt")
 (require ffi/unsafe)
 
 ;; TODO: get rid of mpairs
