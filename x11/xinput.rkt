@@ -3,7 +3,7 @@
 (require (lib "foreign.ss")) (unsafe!)
 (require "x11.rkt" "utils.rkt")
 
-(define libxinput (ffi-lib "libXi"))
+(define libxinput (ffi-lib "libXi" '("6")))
 
 (define-syntax defxi
   (syntax-rules (:)
