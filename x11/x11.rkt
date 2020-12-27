@@ -17,6 +17,7 @@
          "utils.rkt"
          ffi/unsafe
          ffi/unsafe/cvector
+         ffi/unsafe/port
          (only-in '#%foreign ctype-c->scheme ctype-scheme->c)
          rackunit
          )
@@ -2240,7 +2241,9 @@ int count;		/* defines range of change w. first_keycode*/
   (provide XConnectionPort)
   ;; returns an input port that can read the X11 socket
   (define (XConnectionPort display)
-    (open-fd-input-port (XConnectionNumber display)))
+    (unsafe-file-descriptor->port (XConnectionNumber display) "fd-port" '(read))
+    #;(unsafe-fd->evt (XConnectionNumber display) 'read)
+    #;(open-fd-input-port (XConnectionNumber display)))
 
   ;; starts a thread gets x11 events and passes them to the provided channel
   (provide start-x11-event-thread)
